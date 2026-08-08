@@ -167,12 +167,36 @@ stateDiagram-v2
 | Go | 1.23 | All Go modules use `go 1.23` |
 | Python | 3.12 | FastAPI cores require 3.12+ |
 | Node.js | 20 | `@types/node` is `^20` |
-| Docker | 24+ | Required for ChromaDB (`make chroma-up`) |
+| Colima + Docker CLI | latest | Required for ChromaDB (`make chroma-up`) |
 | AWS CLI / credentials | — | Bedrock access in `us-west-2` |
 
 AWS Bedrock model access must be requested in the AWS console for `us-west-2`:
 - `anthropic.claude-3-5-haiku-20241022-v1:0` (AI assistant default)
 - `anthropic.claude-3-5-sonnet-20241022-v2:0` (editorial core default)
+
+### Docker via Colima
+
+This project uses [Colima](https://github.com/abiosoft/colima) as the container runtime instead of Docker Desktop.
+
+**Install:**
+```bash
+brew install colima docker docker-compose
+```
+
+**Start Colima before running any `make` targets that use Docker:**
+```bash
+colima start
+```
+
+That's it — `docker` and `docker compose` commands work as normal once Colima is running. To start Colima automatically on login:
+```bash
+brew services start colima
+```
+
+**Stop when done:**
+```bash
+colima stop
+```
 
 ---
 
