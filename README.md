@@ -200,7 +200,7 @@ Edit `services/ai-assistant/core/.env`:
 AWS_ACCESS_KEY_ID=
 AWS_SECRET_ACCESS_KEY=
 AWS_REGION=us-west-2
-AWS_PROFILE=nordstrom-federated
+AWS_PROFILE=<your-aws-profile>
 
 # Bedrock model — Claude 3.5 Haiku (fast) or Sonnet (smarter)
 BEDROCK_MODEL_ID=anthropic.claude-3-5-haiku-20241022-v1:0
@@ -261,13 +261,13 @@ Open five terminal sessions and run these commands, in order:
 **Terminal 1 — AI assistant Python core**
 ```bash
 make dev-ai-core
-# Starts uvicorn on port 9000 with AWS_PROFILE=nordstrom-federated
+# Starts uvicorn on port 9000
 ```
 
 **Terminal 2 — Editorial Python core**
 ```bash
 make dev-editorial-core
-# Starts uvicorn on port 9100 with AWS_PROFILE=nordstrom-federated
+# Starts uvicorn on port 9100
 ```
 
 **Terminal 3 — All Go services and gateway**
@@ -324,9 +324,9 @@ Expected output:
 | `build` | Compile all Go binaries (`./cmd/server` in each module) |
 | `chroma-up` | Start ChromaDB container detached (`docker compose up -d chromadb`) |
 | `ai-install` | `pip install -r services/ai-assistant/core/requirements.txt` |
-| `dev-ai-core` | Start Python AI core on port 9000 with `AWS_PROFILE=nordstrom-federated` and `--reload` |
+| `dev-ai-core` | Start Python AI core on port 9000 with `--reload` |
 | `dev-ai-api` | Start Go AI API proxy on port 8088, pointing to core at `http://localhost:9000` |
-| `dev-editorial-core` | Start Python editorial core on port 9100 with `AWS_PROFILE=nordstrom-federated` and `--reload` |
+| `dev-editorial-core` | Start Python editorial core on port 9100 with `--reload` |
 | `dev-editorial-api` | Start Go editorial API proxy on port 8089 |
 | `dev-go` | Start all 7 core Go services + both Go proxies + gateway in parallel (Ctrl-C stops all) |
 | `dev-web` | Start storefront Next.js dev server (`apps/web`, port 3000) |
