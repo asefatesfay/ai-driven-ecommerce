@@ -37,15 +37,16 @@ chroma-up:
 	docker compose up -d chromadb
 	@echo "ChromaDB ready at http://localhost:8200"
 
-## install Python deps for ai-assistant-core
+## install Python deps for both cores using uv
 ai-install:
-	pip install -r services/ai-assistant/core/requirements.txt
+	cd services/ai-assistant/core && uv venv --python 3.12 && uv pip install --no-config -r requirements.txt --index-url https://pypi.org/simple
+	cd services/editorial/core && uv venv --python 3.12 && uv pip install --no-config -r requirements.txt --index-url https://pypi.org/simple
 
 ## start the Python AI core (run after chroma-up)
 dev-ai-core:
 	cd services/ai-assistant/core && \
 	  $(if $(AWS_PROFILE),AWS_PROFILE=$(AWS_PROFILE)) CHROMA_HOST=localhost CHROMA_PORT=8200 \
-	  uvicorn app.main:app --host 0.0.0.0 --port 9000 --reload
+	  uv run uvicorn app.main:app --host 0.0.0.0 --port 9000 --reload
 
 ## start the Go AI API proxy (run after dev-ai-core)
 dev-ai-api:
@@ -70,7 +71,7 @@ dev-go:
 dev-editorial-core:
 	cd services/editorial/core && \
 	  $(if $(AWS_PROFILE),AWS_PROFILE=$(AWS_PROFILE)) \
-	  uvicorn app.main:app --host 0.0.0.0 --port 9100 --reload
+	  uv run uvicorn app.main:app --host 0.0.0.0 --port 9100 --reload
 
 ## start Go editorial API (port 8089)
 dev-editorial-api:

@@ -166,6 +166,7 @@ stateDiagram-v2
 |---|---|---|
 | Go | 1.23 | All Go modules use `go 1.23` |
 | Python | 3.12 | FastAPI cores require 3.12+ |
+| uv | latest | Python package manager (`brew install uv`) |
 | Node.js | 20 | `@types/node` is `^20` |
 | Colima + Docker CLI | latest | Required for ChromaDB (`make chroma-up`) |
 | AWS CLI / credentials | — | Bedrock access in `us-west-2` |
@@ -248,17 +249,19 @@ This runs `go mod tidy` across all Go modules: the seven core services, both Go 
 
 ### 4. Install Python dependencies
 
+Install `uv` if you haven't already:
+
+```bash
+brew install uv
+```
+
+Then install deps for both Python cores:
+
 ```bash
 make ai-install
 ```
 
-This runs `pip install -r services/ai-assistant/core/requirements.txt`. Repeat manually for the editorial core if you run it:
-
-```bash
-pip install -r services/editorial/core/requirements.txt
-```
-
-Both Python services use a common set of packages: `fastapi==0.115.0`, `uvicorn[standard]==0.30.6`, `boto3==1.35.0`, `langchain==0.3.1`, `langchain-aws==0.2.0`, `pydantic==2.9.2`.
+This runs `uv pip install` inside each core directory. `uv` auto-manages a virtual environment — no manual `venv` activation needed. Both Python services use: `fastapi==0.115.0`, `uvicorn[standard]==0.30.6`, `boto3>=1.34.131`, `langchain==0.3.1`, `langchain-aws>=0.2.0`, `tenacity>=8.1.0,<9.0.0`, `pydantic==2.9.2`.
 
 ### 5. Install frontend dependencies
 
@@ -347,7 +350,7 @@ Expected output:
 | `tidy` | Run `go mod tidy` on all Go modules (7 services + 2 proxies + gateway) |
 | `build` | Compile all Go binaries (`./cmd/server` in each module) |
 | `chroma-up` | Start ChromaDB container detached (`docker compose up -d chromadb`) |
-| `ai-install` | `pip install -r services/ai-assistant/core/requirements.txt` |
+| `ai-install` | `uv pip install` deps for both Python cores |
 | `dev-ai-core` | Start Python AI core on port 9000 with `--reload` |
 | `dev-ai-api` | Start Go AI API proxy on port 8088, pointing to core at `http://localhost:9000` |
 | `dev-editorial-core` | Start Python editorial core on port 9100 with `--reload` |
@@ -665,9 +668,9 @@ ChromaDB stores product text embeddings in the `products` collection using cosin
 | Go services | Go 1.23, `go-chi/chi` v5.3.1, `go-chi/cors` v1.2.2, `mattn/go-sqlite3` v1.14.49 |
 | Rate limiting | `go-chi/httprate` v0.14.1 (gateway: 1000 req/s global; AI API: 60 req/min per IP) |
 | Python cores | Python 3.12, FastAPI 0.115.0, Uvicorn 0.30.6 |
-| AI inference | `langchain-aws` 0.2.0, `boto3` 1.35.0, AWS Bedrock Claude via `ChatBedrockConverse` |
+| AI inference | `langchain-aws` >=0.2.0, `boto3` >=1.34.131, AWS Bedrock Claude via `ChatBedrockConverse` |
 | Vector search | ChromaDB 0.5.5, cosine similarity, `chromadb.HttpClient` |
-| Retry logic | `tenacity` 9.0.0 (3 attempts, exponential back-off 1–8 s) |
+| Retry logic | `tenacity` >=8.1.0,<9.0.0 (3 attempts, exponential back-off 1–8 s) |
 | Frontends | Next.js 15.3.4, React 19, Tailwind CSS 3.4.17, TypeScript 5 |
 | Containerization | Docker Compose, named SQLite volumes |
 
