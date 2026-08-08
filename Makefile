@@ -3,6 +3,8 @@ AI_API        := services/ai-assistant/api
 EDITORIAL_API := services/editorial/api
 GATEWAY       := gateway
 
+AWS_PROFILE   ?=
+
 .PHONY: tidy build dev-go dev-ai dev-web health chroma-up help
 
 ## go mod tidy for all Go modules
@@ -42,7 +44,7 @@ ai-install:
 ## start the Python AI core (run after chroma-up)
 dev-ai-core:
 	cd services/ai-assistant/core && \
-	  AWS_PROFILE=nordstrom-federated CHROMA_HOST=localhost CHROMA_PORT=8200 \
+	  $(if $(AWS_PROFILE),AWS_PROFILE=$(AWS_PROFILE)) CHROMA_HOST=localhost CHROMA_PORT=8200 \
 	  uvicorn app.main:app --host 0.0.0.0 --port 9000 --reload
 
 ## start the Go AI API proxy (run after dev-ai-core)
@@ -67,7 +69,7 @@ dev-go:
 ## start Python editorial core (port 9100)
 dev-editorial-core:
 	cd services/editorial/core && \
-	  AWS_PROFILE=nordstrom-federated \
+	  $(if $(AWS_PROFILE),AWS_PROFILE=$(AWS_PROFILE)) \
 	  uvicorn app.main:app --host 0.0.0.0 --port 9100 --reload
 
 ## start Go editorial API (port 8089)
