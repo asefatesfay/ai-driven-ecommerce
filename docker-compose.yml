@@ -1,0 +1,196 @@
+version: "3.9"
+
+services:
+  # ── API Gateway ──────────────────────────────────────────────────────────────
+  gateway:
+    build: ./gateway
+    ports:
+      - "8080:8080"
+    environment:
+      PORT: "8080"
+      CATALOG_URL: http://catalog:8081
+      INVENTORY_URL: http://inventory:8082
+      ORDER_URL: http://order:8083
+      CHECKOUT_URL: http://checkout:8084
+      USER_URL: http://user:8085
+      NOTIFICATION_URL: http://notification:8086
+      INGESTION_URL: http://ingestion:8087
+      AI_ASSISTANT_URL: http://ai-assistant:8088
+      EDITORIAL_URL: http://editorial:8089
+    depends_on:
+      - catalog
+      - inventory
+      - order
+      - checkout
+      - user
+      - notification
+      - ingestion
+      - ai-assistant
+      - editorial
+
+  # ── Microservices ─────────────────────────────────────────────────────────────
+  catalog:
+    build: ./services/catalog
+    ports:
+      - "8081:8081"
+    environment:
+      PORT: "8081"
+      DATABASE_URL: /data/catalog.db
+    volumes:
+      - catalog-data:/data
+
+  inventory:
+    build: ./services/inventory
+    ports:
+      - "8082:8082"
+    environment:
+      PORT: "8082"
+      DATABASE_URL: /data/inventory.db
+    volumes:
+      - inventory-data:/data
+
+  order:
+    build: ./services/order
+    ports:
+      - "8083:8083"
+    environment:
+      PORT: "8083"
+      DATABASE_URL: /data/order.db
+    volumes:
+      - order-data:/data
+
+  checkout:
+    build: ./services/checkout
+    ports:
+      - "8084:8084"
+    environment:
+      PORT: "8084"
+      DATABASE_URL: /data/checkout.db
+    volumes:
+      - checkout-data:/data
+
+  user:
+    build: ./services/user
+    ports:
+      - "8085:8085"
+    environment:
+      PORT: "8085"
+      DATABASE_URL: /data/user.db
+    volumes:
+      - user-data:/data
+
+  notification:
+    build: ./services/notification
+    ports:
+      - "8086:8086"
+    environment:
+      PORT: "8086"
+      DATABASE_URL: /data/notification.db
+    volumes:
+      - notification-data:/data
+
+  ingestion:
+    build: ./services/ingestion
+    ports:
+      - "8087:8087"
+    environment:
+      PORT: "8087"
+      DATABASE_URL: /data/ingestion.db
+      CATALOG_URL: http://catalog:8081
+      INVENTORY_URL: http://inventory:8082
+    volumes:
+      - ingestion-data:/data
+
+  # ── AI Assistant — Go API layer (public-facing, port 8088) ───────────────────
+  ai-assistant:
+    build: ./services/ai-assistant/api
+    ports:
+      - "8088:8088"
+    environment:
+      PORT: "8088"
+      AI_CORE_URL: http://ai-assistant-core:9000
+    depends_on:
+      - ai-assistant-core
+
+  # ── AI Assistant — Python core (internal, port 9000) ─────────────────────────
+  ai-assistant-core:
+    build: ./services/ai-assistant/core
+    ports:
+      - "9000:9000"
+    environment:
+      PORT: "9000"
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      BEDROCK_MODEL_ID: ${BEDROCK_MODEL_ID:-anthropic.claude-3-5-haiku-20241022-v1:0}
+      CHROMA_HOST: chromadb
+      CHROMA_PORT: "8200"
+    depends_on:
+      - chromadb
+
+  # ── ChromaDB vector store (internal, port 8200) ───────────────────────────────
+  chromadb:
+    image: chromadb/chroma:0.5.5
+    ports:
+      - "8200:8000"
+    environment:
+      CHROMA_SERVER_AUTH_CREDENTIALS_PROVIDER: ""
+      ANONYMIZED_TELEMETRY: "false"
+    volumes:
+      - chroma-data:/chroma/chroma
+
+  # ── Editorial CMS — Go API (port 8089) ───────────────────────────────────────
+  editorial:
+    build: ./services/editorial/api
+    ports:
+      - "8089:8089"
+    environment:
+      PORT: "8089"
+      DATABASE_URL: /data/editorial.db
+      EDITORIAL_CORE_URL: http://editorial-core:9100
+      CATALOG_URL: http://catalog:8081
+    volumes:
+      - editorial-data:/data
+    depends_on:
+      - editorial-core
+      - catalog
+
+  # ── Editorial CMS — Python core (port 9100) ───────────────────────────────────
+  editorial-core:
+    build: ./services/editorial/core
+    ports:
+      - "9100:9100"
+    environment:
+      PORT: "9100"
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      BEDROCK_MODEL_ID: ${EDITORIAL_BEDROCK_MODEL_ID:-anthropic.claude-3-5-sonnet-20241022-v2:0}
+
+  # ── Frontend — storefront ─────────────────────────────────────────────────────
+  web:
+    build: ./apps/web
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_GATEWAY_URL: http://localhost:8080
+
+  # ── Frontend — editorial internal tool ───────────────────────────────────────
+  editorial-ui:
+    build: ./apps/editorial
+    ports:
+      - "3001:3001"
+    environment:
+      NEXT_PUBLIC_EDITORIAL_URL: http://localhost:8089
+      NEXT_PUBLIC_CATALOG_URL: http://localhost:8081
+
+volumes:
+  catalog-data:
+  inventory-data:
+  order-data:
+  checkout-data:
+  user-data:
+  notification-data:
+  ingestion-data:
+  chroma-data:
+  editorial-data:
