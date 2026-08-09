@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { fetchEditorial, apiEditorialToUI } from "@/lib/api";
 import type { FilterRecipient, FilterTheme, FilterPrice, EditorialProduct } from "@/lib/data";
 import type { ActiveFilters } from "./FilterBar";
@@ -8,6 +9,8 @@ import FilterBar from "./FilterBar";
 import EditorialProductCard from "./EditorialProductCard";
 
 export default function GiftEditGrid() {
+  const searchParams = useSearchParams();
+  const urlSearch = searchParams.get("search")?.toLowerCase() ?? "";
   const [products, setProducts] = useState<EditorialProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<ActiveFilters>({
@@ -34,9 +37,10 @@ export default function GiftEditGrid() {
       if (filters.recipient && !p.filters.recipient.includes(filters.recipient as FilterRecipient)) return false;
       if (filters.theme && !p.filters.theme.includes(filters.theme as FilterTheme)) return false;
       if (filters.price && p.filters.price !== (filters.price as FilterPrice)) return false;
+      if (urlSearch && !p.name.toLowerCase().includes(urlSearch) && !p.brand.toLowerCase().includes(urlSearch)) return false;
       return true;
     });
-  }, [products, filters]);
+  }, [products, filters, urlSearch]);
 
   return (
     <>

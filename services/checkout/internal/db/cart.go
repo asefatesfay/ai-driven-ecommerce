@@ -11,16 +11,20 @@ func GetOrCreateCart(db *sql.DB, userID int64, sessionID string) (*models.Cart, 
 	var cart models.Cart
 	var err error
 
+	var nullUserID sql.NullInt64
 	if userID > 0 {
 		err = db.QueryRow(
 			"SELECT id, user_id, session_id, created_at, updated_at FROM carts WHERE user_id = ?",
 			userID,
-		).Scan(&cart.ID, &cart.UserID, &cart.SessionID, &cart.CreatedAt, &cart.UpdatedAt)
+		).Scan(&cart.ID, &nullUserID, &cart.SessionID, &cart.CreatedAt, &cart.UpdatedAt)
 	} else {
 		err = db.QueryRow(
 			"SELECT id, user_id, session_id, created_at, updated_at FROM carts WHERE session_id = ?",
 			sessionID,
-		).Scan(&cart.ID, &cart.UserID, &cart.SessionID, &cart.CreatedAt, &cart.UpdatedAt)
+		).Scan(&cart.ID, &nullUserID, &cart.SessionID, &cart.CreatedAt, &cart.UpdatedAt)
+	}
+	if nullUserID.Valid {
+		cart.UserID = nullUserID.Int64
 	}
 
 	if err == sql.ErrNoRows {

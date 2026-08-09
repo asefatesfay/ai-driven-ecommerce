@@ -5,6 +5,7 @@ export interface ProductColor {
 
 export interface CatalogProduct {
   id: string;
+  productId?: number;
   brand: string;
   name: string;
   price: number;

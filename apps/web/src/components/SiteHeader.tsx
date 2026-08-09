@@ -1,6 +1,9 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useCart } from "@/lib/CartContext";
 
 const NAV_LINKS = [
   { label: "Anniversary Sale", href: "#" },
@@ -17,11 +20,22 @@ const NAV_LINKS = [
 export default function SiteHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const searchRef = useRef<HTMLInputElement>(null);
+  const router = useRouter();
+  const { cartCount } = useCart();
 
   useEffect(() => {
     if (searchOpen) searchRef.current?.focus();
   }, [searchOpen]);
+
+  function handleSearchSubmit(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Enter" && searchQuery.trim()) {
+      router.push(`/gifts?search=${encodeURIComponent(searchQuery.trim())}`);
+      setSearchOpen(false);
+      setSearchQuery("");
+    }
+  }
 
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-nordstrom-gray-200">
@@ -44,6 +58,9 @@ export default function SiteHeader() {
           <input
             ref={searchRef}
             type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={handleSearchSubmit}
             placeholder="Search for brands, styles, and more..."
             className="flex-1 text-sm outline-none placeholder-nordstrom-gray-300"
           />
@@ -126,13 +143,18 @@ export default function SiteHeader() {
               <circle cx="12" cy="7" r="4" />
             </svg>
           </button>
-          <button aria-label="Shopping bag" className="p-1 hover:opacity-60 transition-opacity relative">
+          <Link href="/cart" aria-label="Shopping bag" className="p-1 hover:opacity-60 transition-opacity relative">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
               <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
               <line x1="3" y1="6" x2="21" y2="6" />
               <path d="M16 10a4 4 0 0 1-8 0" />
             </svg>
-          </button>
+            {cartCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-4 h-4 bg-nordstrom-black text-white text-[9px] rounded-full flex items-center justify-center font-medium">
+                {cartCount > 9 ? "9+" : cartCount}
+              </span>
+            )}
+          </Link>
         </div>
       </div>
 

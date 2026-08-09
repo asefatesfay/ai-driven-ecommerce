@@ -5,6 +5,7 @@ export type FilterPrice = "under-50" | "50-100" | "100-200" | "200-plus";
 export interface EditorialProduct {
   id: string;
   productId: string;
+  numericProductId?: number;
   brand: string;
   name: string;
   price: number;

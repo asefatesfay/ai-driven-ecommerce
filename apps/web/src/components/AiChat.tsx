@@ -4,11 +4,12 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 
 const GATEWAY_URL = process.env.NEXT_PUBLIC_GATEWAY_URL ?? "http://localhost:8080";
+const CATALOG_URL = process.env.NEXT_PUBLIC_CATALOG_URL ?? "http://localhost:8081";
 
-const SUGGESTED_QUERIES = [
+const FALLBACK_QUERIES = [
   "Cozy gifts under $100",
   "Best gifts for her",
-  "Running shoes recommendations",
+  "Show me shoes",
   "Luxury beauty gifts",
 ];
 
@@ -46,6 +47,17 @@ export default function AiChat() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
+  const [suggestedQueries, setSuggestedQueries] = useState<string[]>(FALLBACK_QUERIES);
+
+  useEffect(() => {
+    fetch(`${CATALOG_URL}/api/v1/products?page_size=100`)
+      .then((r) => r.json())
+      .then((d) => {
+        const cats = [...new Set<string>((d.products ?? []).map((p: { category: string }) => p.category))].slice(0, 4);
+        if (cats.length > 0) setSuggestedQueries(cats.map((c) => `Show me ${c} gifts`));
+      })
+      .catch(() => {}); // keep fallback
+  }, []);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -149,7 +161,7 @@ export default function AiChat() {
                 <div>
                   <p className="text-xs font-medium text-gray-400 uppercase tracking-widest mb-2">Try asking</p>
                   <div className="grid grid-cols-2 gap-2">
-                    {SUGGESTED_QUERIES.map((q) => (
+                    {suggestedQueries.map((q) => (
                       <button
                         key={q}
                         onClick={() => send(q)}

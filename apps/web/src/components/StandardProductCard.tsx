@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import type { CatalogProduct } from "@/lib/catalog-data";
+import { useCart } from "@/lib/CartContext";
 import StarRating from "./StarRating";
 import ProductBadge from "./ProductBadge";
 import ColorSwatches from "./ColorSwatches";
@@ -15,6 +16,7 @@ export default function StandardProductCard({ product }: { product: CatalogProdu
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [hovered, setHovered] = useState(false);
   const [addedToBag, setAddedToBag] = useState(false);
+  const { addItem } = useCart();
 
   const isOnSale = !!product.salePrice;
   const displayPrice = product.salePrice ?? product.price;
@@ -22,6 +24,7 @@ export default function StandardProductCard({ product }: { product: CatalogProdu
   function handleAddToBag(e: React.MouseEvent) {
     e.preventDefault();
     if (product.sizes.length > 0 && !selectedSize) return;
+    if (product.productId) addItem(product.productId, 1, product.salePrice ?? product.price).catch(() => {});
     setAddedToBag(true);
     setTimeout(() => setAddedToBag(false), 2000);
   }

@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import type { EditorialProduct } from "@/lib/data";
+import { useCart } from "@/lib/CartContext";
 import { ATTRIBUTION_LABELS, FILTER_LABELS } from "@/lib/data";
 
 interface EditorialProductCardProps {
@@ -13,12 +14,14 @@ interface EditorialProductCardProps {
 export default function EditorialProductCard({ product }: EditorialProductCardProps) {
   const [wished, setWished] = useState(false);
   const [addedToBag, setAddedToBag] = useState(false);
+  const { addItem } = useCart();
 
   const displayPrice = product.salePrice ?? product.price;
   const isOnSale = !!product.salePrice;
 
   function handleAddToBag(e: React.MouseEvent) {
     e.preventDefault();
+    if (product.numericProductId) addItem(product.numericProductId, 1, product.salePrice ?? product.price).catch(() => {});
     setAddedToBag(true);
     setTimeout(() => setAddedToBag(false), 2000);
   }

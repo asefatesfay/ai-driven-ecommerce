@@ -135,6 +135,7 @@ import type { EditorialProduct } from "./data";
 export function apiProductToCatalog(p: APIProduct): CatalogProduct {
   return {
     id: p.style_id,
+    productId: p.id,
     brand: p.brand,
     name: p.name,
     price: p.price,
@@ -158,6 +159,7 @@ export function apiEditorialToUI(ep: APIEditorialProduct): EditorialProduct {
   return {
     id: `api-editorial-${ep.id}`,
     productId: String(p.style_id),
+    numericProductId: p.id,
     brand: p.brand,
     name: p.name,
     price: p.price,

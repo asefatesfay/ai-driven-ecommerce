@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import { fetchProducts, apiProductToCatalog } from "@/lib/api";
 import type { CatalogProduct } from "@/lib/catalog-data";
 import StandardProductCard from "./StandardProductCard";
@@ -95,6 +96,8 @@ function Pagination({ page, totalPages, onPageChange }: { page: number; totalPag
 }
 
 export default function StandardProductGrid() {
+  const searchParams = useSearchParams();
+  const urlSearch = searchParams.get("search") ?? "";
   const [sort, setSort] = useState("featured");
   const [activeFilters, setActiveFilters] = useState<Record<string, string | null>>({ gender: null, category: null, priceRange: null });
   const [page, setPage] = useState(1);
@@ -117,6 +120,8 @@ export default function StandardProductGrid() {
     if (activeFilters.priceRange === "luxe") params.min_price = 200;
     if (sort !== "featured") params.sort = sort;
 
+    if (urlSearch) params.search = urlSearch;
+
     fetchProducts(params as Parameters<typeof fetchProducts>[0])
       .then((data) => {
         setProducts((data.products ?? []).map(apiProductToCatalog));
@@ -125,7 +130,7 @@ export default function StandardProductGrid() {
       })
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, [page, sort, activeFilters]);
+  }, [page, sort, activeFilters, urlSearch]);
 
   function toggleFilter(key: string, value: string) {
     setActiveFilters((prev) => ({ ...prev, [key]: prev[key] === value ? null : value }));
