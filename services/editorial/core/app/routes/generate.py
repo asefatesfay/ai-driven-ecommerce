@@ -21,6 +21,9 @@ async def generate(req: GenerateRequest) -> GenerateResponse:
             price_range=req.price_range,
             max_words=req.max_words,
             num_variants=req.num_variants,
+            feedback=req.feedback,
+            previous_headline=req.previous_headline,
+            previous_body=req.previous_body,
         )
         return GenerateResponse(
             style_id=req.product.style_id,
@@ -28,5 +31,5 @@ async def generate(req: GenerateRequest) -> GenerateResponse:
             attribution=req.attribution,
         )
     except Exception as e:
-        logger.exception("generation failed for %s", req.product.style_id)
+        logger.exception("generation failed for %s: %s", req.product.style_id, repr(e))
         raise HTTPException(status_code=500, detail=str(e))

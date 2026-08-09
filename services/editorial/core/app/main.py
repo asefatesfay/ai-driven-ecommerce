@@ -34,5 +34,5 @@ async def health() -> dict:
     return {
         "status": "ok",
         "service": "editorial-core",
-        "bedrock_model": os.getenv("BEDROCK_MODEL_ID", "anthropic.claude-3-5-sonnet-20241022-v2:0"),
+        "bedrock_model": os.getenv("BEDROCK_MODEL_ID", "us.anthropic.claude-haiku-4-5-20251001-v1:0"),
     }

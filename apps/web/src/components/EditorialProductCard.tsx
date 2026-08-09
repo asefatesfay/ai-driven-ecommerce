@@ -31,7 +31,7 @@ export default function EditorialProductCard({ product }: EditorialProductCardPr
 
   return (
     <article className="group flex flex-col bg-white border border-nordstrom-gray-200 hover:border-nordstrom-gray-300 transition-all duration-200 hover:shadow-sm">
-      <Link href="/product" className="contents">
+      <Link href={`/product?style_id=${product.productId}`} className="contents">
       {/* Image container */}
       <div className="relative aspect-[3/4] overflow-hidden bg-nordstrom-gray-50">
         <Image

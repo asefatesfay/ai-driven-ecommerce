@@ -34,7 +34,7 @@ build:
 
 ## start ChromaDB only (prerequisite for ai-assistant-core)
 chroma-up:
-	docker compose up -d chromadb
+	DOCKER_HOST=unix://$(HOME)/.colima/default/docker.sock docker compose up -d chromadb
 	@echo "ChromaDB ready at http://localhost:8200"
 
 ## install Python deps for both cores using uv
@@ -45,12 +45,12 @@ ai-install:
 ## start the Python AI core (run after chroma-up)
 dev-ai-core:
 	cd services/ai-assistant/core && \
-	  $(if $(AWS_PROFILE),AWS_PROFILE=$(AWS_PROFILE)) CHROMA_HOST=localhost CHROMA_PORT=8200 \
-	  uv run uvicorn app.main:app --host 0.0.0.0 --port 9000 --reload
+	  $(if $(AWS_PROFILE),AWS_PROFILE=$(AWS_PROFILE)) CHROMA_HOST=localhost CHROMA_PORT=8200 CATALOG_URL=http://localhost:8081 \
+	  uv run uvicorn app.main:app --host 0.0.0.0 --port 19010 --reload
 
 ## start the Go AI API proxy (run after dev-ai-core)
 dev-ai-api:
-	cd $(AI_API) && AI_CORE_URL=http://localhost:9000 PORT=8088 go run ./cmd/server
+	cd $(AI_API) && AI_CORE_URL=http://localhost:19010 PORT=8088 go run ./cmd/server
 
 ## start all Go backend services locally
 dev-go:
@@ -62,7 +62,7 @@ dev-go:
 	 (cd services/user       && PORT=8085 go run ./cmd/server) & \
 	 (cd services/notification && PORT=8086 go run ./cmd/server) & \
 	 (cd services/ingestion  && PORT=8087 go run ./cmd/server) & \
-	 (cd $(AI_API)           && AI_CORE_URL=http://localhost:9000 PORT=8088 go run ./cmd/server) & \
+	 (cd $(AI_API)           && AI_CORE_URL=http://localhost:19010 PORT=8088 go run ./cmd/server) & \
 	 (cd $(EDITORIAL_API)   && EDITORIAL_CORE_URL=http://localhost:9100 CATALOG_URL=http://localhost:8081 PORT=8089 go run ./cmd/server) & \
 	 (cd $(GATEWAY)          && PORT=8080 go run ./cmd/server); \
 	 wait
@@ -80,11 +80,11 @@ dev-editorial-api:
 
 ## start storefront Next.js frontend (port 3000)
 dev-web:
-	cd apps/web && npm run dev
+	cd apps/web && NODE_EXTRA_CA_CERTS=$(HOME)/.corp-ca-certs.pem npm run dev
 
 ## start editorial internal UI (port 3001)
 dev-editorial-ui:
-	cd apps/editorial && npm run dev
+	cd apps/editorial && NODE_EXTRA_CA_CERTS=$(HOME)/.corp-ca-certs.pem npm run dev
 
 ## check health of all running services
 health:
@@ -98,7 +98,7 @@ health:
 	@curl -sf http://localhost:8086/health       && echo " notification OK"      || echo " notification DOWN"
 	@curl -sf http://localhost:8087/health       && echo " ingestion OK"         || echo " ingestion DOWN"
 	@curl -sf http://localhost:8088/health       && echo " ai-assistant API OK"  || echo " ai-assistant API DOWN"
-	@curl -sf http://localhost:9000/health       && echo " ai-assistant core OK" || echo " ai-assistant core DOWN"
+	@curl -sf http://localhost:19010/health       && echo " ai-assistant core OK" || echo " ai-assistant core DOWN"
 	@curl -sf http://localhost:8089/health       && echo " editorial API OK"    || echo " editorial API DOWN"
 	@curl -sf http://localhost:9100/health       && echo " editorial core OK"   || echo " editorial core DOWN"
 	@curl -sf http://localhost:8200/api/v1/heartbeat && echo " chromadb OK"      || echo " chromadb DOWN"
@@ -109,7 +109,7 @@ help:
 	@echo "  build         — build all Go binaries"
 	@echo "  chroma-up     — start ChromaDB in Docker"
 	@echo "  ai-install    — pip install Python AI core deps"
-	@echo "  dev-ai-core   — run Python FastAPI core (port 9000)"
+	@echo "  dev-ai-core   — run Python FastAPI core (port 19010)"
 	@echo "  dev-ai-api    — run Go AI API proxy (port 8088)"
 	@echo "  dev-go        — run all Go services locally"
 	@echo "  dev-web       — run Next.js frontend"

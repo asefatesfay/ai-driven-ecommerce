@@ -32,7 +32,7 @@ export default function StandardProductCard({ product }: { product: CatalogProdu
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-    <Link href="/product" className="contents">
+    <Link href={`/product?style_id=${product.id}`} className="contents">
       {/* Image container */}
       <div className="relative aspect-[3/4] overflow-hidden bg-nordstrom-gray-50 mb-3">
         <Image

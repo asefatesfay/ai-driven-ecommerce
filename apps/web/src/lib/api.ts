@@ -1,4 +1,5 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
+const CATALOG_BASE = process.env.NEXT_PUBLIC_CATALOG_URL ?? "http://localhost:8081";
+const INVENTORY_BASE = process.env.NEXT_PUBLIC_INVENTORY_URL ?? "http://localhost:8082";
 
 export interface APIProduct {
   id: number;
@@ -78,13 +79,16 @@ export async function fetchProducts(params: {
   Object.entries(params).forEach(([k, v]) => {
     if (v !== undefined && v !== null && v !== "") q.set(k, String(v));
   });
-  const res = await fetch(`${API_BASE}/api/products?${q}`, { next: { revalidate: 60 } });
+  const res = await fetch(`${CATALOG_BASE}/api/v1/products?${q}`, { next: { revalidate: 60 } });
   if (!res.ok) throw new Error(`fetchProducts: ${res.status}`);
   return res.json();
 }
 
-export async function fetchProduct(id: number): Promise<APIProduct> {
-  const res = await fetch(`${API_BASE}/api/products/${id}`, { next: { revalidate: 60 } });
+export async function fetchProduct(styleId: string | number): Promise<APIProduct> {
+  const url = typeof styleId === "string" && isNaN(Number(styleId))
+    ? `${CATALOG_BASE}/api/v1/products/style/${styleId}`
+    : `${CATALOG_BASE}/api/v1/products/style/${styleId}`;
+  const res = await fetch(url, { next: { revalidate: 60 } });
   if (!res.ok) throw new Error(`fetchProduct: ${res.status}`);
   return res.json();
 }
@@ -98,7 +102,7 @@ export async function fetchEditorial(params: {
   Object.entries(params).forEach(([k, v]) => {
     if (v) q.set(k, v);
   });
-  const res = await fetch(`${API_BASE}/api/editorial?${q}`, { next: { revalidate: 30 } });
+  const res = await fetch(`${CATALOG_BASE}/api/v1/editorial?${q}`, { next: { revalidate: 30 } });
   if (!res.ok) throw new Error(`fetchEditorial: ${res.status}`);
   return res.json();
 }
@@ -106,7 +110,7 @@ export async function fetchEditorial(params: {
 // ── Inventory ─────────────────────────────────────────────────────────────────
 
 export async function fetchInventory(productId: number): Promise<APIProductInventory> {
-  const res = await fetch(`${API_BASE}/api/inventory/${productId}`, { next: { revalidate: 60 } });
+  const res = await fetch(`${INVENTORY_BASE}/api/v1/inventory/${productId}`, { next: { revalidate: 60 } });
   if (!res.ok) throw new Error(`fetchInventory: ${res.status}`);
   return res.json();
 }
@@ -114,7 +118,7 @@ export async function fetchInventory(productId: number): Promise<APIProductInven
 export async function fetchBulkInventory(styleIds: string[]): Promise<Record<string, APIProductInventory>> {
   if (styleIds.length === 0) return {};
   const res = await fetch(
-    `${API_BASE}/api/inventory?style_ids=${styleIds.join(",")}`,
+    `${INVENTORY_BASE}/api/v1/inventory?style_ids=${styleIds.join(",")}`,
     { next: { revalidate: 60 } }
   );
   if (!res.ok) throw new Error(`fetchBulkInventory: ${res.status}`);
@@ -130,7 +134,7 @@ import type { EditorialProduct } from "./data";
 
 export function apiProductToCatalog(p: APIProduct): CatalogProduct {
   return {
-    id: `api-${p.id}`,
+    id: p.style_id,
     brand: p.brand,
     name: p.name,
     price: p.price,

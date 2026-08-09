@@ -285,6 +285,27 @@ func ListEditorialProducts(db *sql.DB, params models.EditorialListParams) ([]mod
 	return items, nil
 }
 
+func UpsertEditorialProduct(db *sql.DB, styleID string, req models.UpsertEditorialRequest) error {
+	recipientJSON, _ := json.Marshal(req.FilterRecipient)
+	themeJSON, _ := json.Marshal(req.FilterTheme)
+
+	_, err := db.Exec(`
+		UPDATE editorial_products
+		SET editorial_headline = ?,
+		    editorial_copy     = ?,
+		    attribution        = ?,
+		    filter_recipient   = ?,
+		    filter_theme       = ?,
+		    filter_price       = ?,
+		    active             = ?
+		WHERE product_id = (SELECT id FROM products WHERE style_id = ?)`,
+		req.EditorialHeadline, req.EditorialCopy, req.Attribution,
+		string(recipientJSON), string(themeJSON), req.FilterPrice, req.Active,
+		styleID,
+	)
+	return err
+}
+
 // ── Batch relation loader — single query per relation table ──────────────────
 
 // loadRelationsForIDs loads colors, sizes, and recipients for a batch of products

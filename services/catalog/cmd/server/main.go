@@ -55,7 +55,7 @@ func main() {
 	r.Use(chimiddleware.Recoverer)
 	r.Use(chimiddleware.RequestID)
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:3000", "http://localhost:8080"},
+		AllowedOrigins:   []string{"http://localhost:3000", "http://localhost:3001", "http://localhost:8080"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Content-Type", "Authorization"},
 		AllowCredentials: true,
@@ -73,6 +73,7 @@ func main() {
 		r.Put("/products/{id}", catalog.UpdateProduct)
 		r.Get("/products/style/{styleId}", catalog.GetProductByStyle)
 		r.Get("/editorial", catalog.ListEditorial)
+		r.Put("/editorial/products/{styleId}", catalog.UpsertEditorial)
 	})
 
 	log.Printf("catalog service on :%s", port)

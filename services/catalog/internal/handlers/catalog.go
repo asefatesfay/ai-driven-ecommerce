@@ -140,6 +140,21 @@ func (h *CatalogHandler) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 	middleware.JSON(w, http.StatusOK, product)
 }
 
+// PUT /api/editorial/products/{styleId}
+func (h *CatalogHandler) UpsertEditorial(w http.ResponseWriter, r *http.Request) {
+	styleID := chi.URLParam(r, "styleId")
+	var req models.UpsertEditorialRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		middleware.BadRequest(w, "invalid request body")
+		return
+	}
+	if err := db.UpsertEditorialProduct(h.DB, styleID, req); err != nil {
+		middleware.InternalError(w, err)
+		return
+	}
+	middleware.JSON(w, http.StatusOK, map[string]string{"status": "ok"})
+}
+
 // GET /api/editorial
 func (h *CatalogHandler) ListEditorial(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()

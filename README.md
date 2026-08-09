@@ -29,7 +29,7 @@ graph TD
 
     subgraph AIStack["AI Stack"]
         AIAPI["AI Assistant API\n:8088 · Go · 60 req/min per IP"]
-        AICORE["AI Assistant Core\n:9000 · Python · FastAPI"]
+        AICORE["AI Assistant Core\n:19010 · Python · FastAPI"]
         CHROMA["ChromaDB\n:8200 · vector store"]
     end
 
@@ -72,7 +72,7 @@ graph TD
 | Notification | `services/notification/` | 8086 | Go | Send, list, and manage notification preferences |
 | Ingestion | `services/ingestion/` | 8087 | Go | Bulk product and inventory import pipeline |
 | AI Assistant API | `services/ai-assistant/api/` | 8088 | Go | Rate-limited proxy (60 req/min per IP) to AI core |
-| AI Assistant Core | `services/ai-assistant/core/` | 9000 | Python | Claude RAG chat and semantic search via ChromaDB |
+| AI Assistant Core | `services/ai-assistant/core/` | 19010 | Python | Claude RAG chat and semantic search via ChromaDB |
 | Editorial API | `services/editorial/api/` | 8089 | Go | Draft CRUD, workflow transitions, catalog publish |
 | Editorial Core | `services/editorial/core/` | 9100 | Python | Claude copy generation with attribution personas |
 | ChromaDB | Docker image | 8200 | — | Vector store for product catalog embeddings |
@@ -103,7 +103,7 @@ The gateway strips the route prefix before proxying. A request to `GET /catalog/
 sequenceDiagram
     participant Client
     participant AIApi as AI Assistant API :8088
-    participant AICore as AI Assistant Core :9000
+    participant AICore as AI Assistant Core :19010
     participant Chroma as ChromaDB :8200
     participant Bedrock as AWS Bedrock (Claude 3.5 Haiku)
 
@@ -172,8 +172,8 @@ stateDiagram-v2
 | AWS CLI / credentials | — | Bedrock access in `us-west-2` |
 
 AWS Bedrock model access must be requested in the AWS console for `us-west-2`:
-- `anthropic.claude-3-5-haiku-20241022-v1:0` (AI assistant default)
-- `anthropic.claude-3-5-sonnet-20241022-v2:0` (editorial core default)
+- `us.anthropic.claude-haiku-4-5-20251001-v1:0` (AI assistant default)
+- `us.anthropic.claude-haiku-4-5-20251001-v1:0` (editorial core default)
 
 ### Docker via Colima
 
@@ -228,13 +228,13 @@ AWS_REGION=us-west-2
 AWS_PROFILE=<your-aws-profile>
 
 # Bedrock model — Claude 3.5 Haiku (fast) or Sonnet (smarter)
-BEDROCK_MODEL_ID=anthropic.claude-3-5-haiku-20241022-v1:0
+BEDROCK_MODEL_ID=us.anthropic.claude-haiku-4-5-20251001-v1:0
 
 # ChromaDB
 CHROMA_HOST=localhost
 CHROMA_PORT=8200
 
-PORT=9000
+PORT=19010
 ```
 
 For the storefront and editorial UI, the `.env.local` files pointing to `localhost` service ports are already committed for development use.
@@ -288,7 +288,7 @@ Open five terminal sessions and run these commands, in order:
 **Terminal 1 — AI assistant Python core**
 ```bash
 make dev-ai-core
-# Starts uvicorn on port 9000
+# Starts uvicorn on port 19010
 ```
 
 **Terminal 2 — Editorial Python core**
@@ -351,8 +351,8 @@ Expected output:
 | `build` | Compile all Go binaries (`./cmd/server` in each module) |
 | `chroma-up` | Start ChromaDB container detached (`docker compose up -d chromadb`) |
 | `ai-install` | `uv pip install` deps for both Python cores |
-| `dev-ai-core` | Start Python AI core on port 9000 with `--reload` |
-| `dev-ai-api` | Start Go AI API proxy on port 8088, pointing to core at `http://localhost:9000` |
+| `dev-ai-core` | Start Python AI core on port 19010 with `--reload` |
+| `dev-ai-api` | Start Go AI API proxy on port 8088, pointing to core at `http://localhost:19010` |
 | `dev-editorial-core` | Start Python editorial core on port 9100 with `--reload` |
 | `dev-editorial-api` | Start Go editorial API proxy on port 8089 |
 | `dev-go` | Start all 7 core Go services + both Go proxies + gateway in parallel (Ctrl-C stops all) |
@@ -368,13 +368,10 @@ Expected output:
 To run the entire stack in containers:
 
 ```bash
-# Supply AWS credentials as environment variables
-export AWS_ACCESS_KEY_ID=...
-export AWS_SECRET_ACCESS_KEY=...
-export AWS_REGION=us-west-2
-
-docker compose up --build
+AWS_PROFILE=<your-aws-profile> docker compose up --build
 ```
+
+The Python AI cores mount `~/.aws` read-only into the container so the named profile's credentials are available without embedding keys in environment variables.
 
 The compose file builds all Go and Python service images, mounts named Docker volumes for each SQLite database, and uses the official `chromadb/chroma:0.5.5` image. The ChromaDB container maps host port `8200` to its internal port `8000`.
 
@@ -388,31 +385,27 @@ Named volumes: `catalog-data`, `inventory-data`, `order-data`, `checkout-data`, 
 
 | Variable | Default | Required |
 |---|---|---|
-| `AWS_ACCESS_KEY_ID` | — | Yes (or IAM role) |
-| `AWS_SECRET_ACCESS_KEY` | — | Yes (or IAM role) |
+| `AWS_PROFILE` | — | Yes (named profile from `~/.aws`) |
 | `AWS_REGION` | `us-west-2` | No |
-| `AWS_PROFILE` | — | Local dev only |
-| `BEDROCK_MODEL_ID` | `anthropic.claude-3-5-haiku-20241022-v1:0` | No |
+| `BEDROCK_MODEL_ID` | `us.anthropic.claude-haiku-4-5-20251001-v1:0` | No |
 | `CHROMA_HOST` | `localhost` | No |
 | `CHROMA_PORT` | `8200` | No |
-| `PORT` | `9000` | No |
+| `PORT` | `19010` | No |
 
 ### Editorial Core (`services/editorial/core`)
 
 | Variable | Default | Required |
 |---|---|---|
-| `AWS_ACCESS_KEY_ID` | — | Yes (or IAM role) |
-| `AWS_SECRET_ACCESS_KEY` | — | Yes (or IAM role) |
+| `AWS_PROFILE` | — | Yes (named profile from `~/.aws`) |
 | `AWS_REGION` | `us-west-2` | No |
-| `AWS_PROFILE` | — | Local dev only |
-| `BEDROCK_MODEL_ID` | `anthropic.claude-3-5-sonnet-20241022-v2:0` | No |
+| `BEDROCK_MODEL_ID` | `us.anthropic.claude-haiku-4-5-20251001-v1:0` | No |
 | `PORT` | `9100` | No |
 
 ### AI Assistant API proxy (`services/ai-assistant/api`)
 
 | Variable | Default |
 |---|---|
-| `AI_CORE_URL` | `http://localhost:9000` |
+| `AI_CORE_URL` | `http://localhost:19010` |
 | `PORT` | `8088` |
 
 ### Editorial API (`services/editorial/api`)
@@ -600,7 +593,7 @@ Rate limit: 60 requests per minute per IP address.
 }
 ```
 
-The AI core OpenAPI docs are available at `http://localhost:9000/docs` while `dev-ai-core` is running.
+The AI core OpenAPI docs are available at `http://localhost:19010/docs` while `dev-ai-core` is running.
 
 ### Editorial API — port 8089
 

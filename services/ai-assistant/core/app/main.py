@@ -1,4 +1,4 @@
-"""AI Assistant core — FastAPI app served on internal port 9000.
+"""AI Assistant core — FastAPI app served on internal port 19010.
 
 The Go API gateway (port 8088) proxies external traffic here.
 """
@@ -6,7 +6,9 @@ from __future__ import annotations
 
 import logging
 import os
+from contextlib import asynccontextmanager
 
+import httpx
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -17,7 +19,56 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s %(name)s — %(message)s",
 )
 
+logger = logging.getLogger(__name__)
+
+CATALOG_URL = os.getenv("CATALOG_URL", "http://localhost:8081")
+
+
+async def _sync_catalog() -> None:
+    """Fetch all products from the catalog and index them into ChromaDB."""
+    from app.embeddings.chroma import index_products, collection_count
+    from app.models.schemas import ProductDocument
+
+    if collection_count() > 0:
+        logger.info("catalog already indexed (%d products), skipping", collection_count())
+        return
+
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            resp = await client.get(f"{CATALOG_URL}/api/v1/products?page_size=200")
+            resp.raise_for_status()
+            data = resp.json()
+
+        products = [
+            ProductDocument(
+                style_id=p["style_id"],
+                name=p["name"],
+                brand=p["brand"],
+                description=p.get("description", ""),
+                category=p.get("category", ""),
+                price=float(p.get("price", 0)),
+                image_url=p.get("image_url", ""),
+                recipients=p.get("recipients", []),
+                colors=[c["name"] if isinstance(c, dict) else c for c in p.get("colors", [])],
+                sizes=p.get("sizes", []),
+            )
+            for p in data.get("products", [])
+        ]
+
+        count = index_products(products)
+        logger.info("indexed %d products into ChromaDB on startup", count)
+    except Exception as e:
+        logger.warning("catalog sync failed on startup (will retry on next request): %s", e)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await _sync_catalog()
+    yield
+
+
 app = FastAPI(
+    lifespan=lifespan,
     title="AI Assistant Core",
     version="1.0.0",
     docs_url="/docs",
@@ -42,7 +93,7 @@ async def health() -> dict:
     return {
         "status": "ok",
         "service": "ai-assistant-core",
-        "bedrock_model": os.getenv("BEDROCK_MODEL_ID", "anthropic.claude-3-5-haiku-20241022-v1:0"),
+        "bedrock_model": os.getenv("BEDROCK_MODEL_ID", "us.anthropic.claude-haiku-4-5-20251001-v1:0"),
         "chroma_host": os.getenv("CHROMA_HOST", "localhost"),
         "catalog_indexed": collection_count(),
     }

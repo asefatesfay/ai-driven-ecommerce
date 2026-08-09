@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 AWS_REGION = os.getenv("AWS_REGION", "us-west-2")
 BEDROCK_MODEL_ID = os.getenv(
     "BEDROCK_MODEL_ID",
-    "anthropic.claude-3-5-sonnet-20241022-v2:0",  # Sonnet for richer copy quality
+    "us.anthropic.claude-haiku-4-5-20251001-v1:0",
 )
 
 # ── Per-attribution persona prompts ──────────────────────────────────────────
@@ -64,14 +64,31 @@ def _build_prompt(
     price_range: str,
     max_words: int,
     num_variants: int,
+    feedback: str = "",
+    previous_headline: str = "",
+    previous_body: str = "",
 ) -> str:
     sale_note = f" (on sale from ${product.price:.0f})" if product.sale_price else ""
     recipient_str = ", ".join(product.recipients) if product.recipients else "anyone"
-    color_str = ", ".join(product.colors[:4]) if product.colors else ""
+    color_str = ", ".join(
+        (c.name if hasattr(c, "name") else c) for c in product.colors[:4]
+    ) if product.colors else ""
     theme_str = ", ".join(themes) if themes else "unspecified"
 
-    return f"""Generate {num_variants} editorial copy variants for this product.
+    refinement_block = ""
+    if feedback and previous_headline:
+        refinement_block = f"""
+Previous copy (revise this):
+  Headline: {previous_headline}
+  Body: {previous_body}
 
+Editor feedback: {feedback}
+
+Apply the feedback to produce improved copy. Keep what works, fix what doesn't.
+"""
+
+    return f"""Generate {num_variants} editorial copy variant(s) for this product.
+{refinement_block}
 Product: {product.brand} — {product.name}
 Description: {product.description}
 Category: {product.category}
@@ -113,13 +130,17 @@ def generate_variants(
     price_range: str,
     max_words: int,
     num_variants: int,
+    feedback: str = "",
+    previous_headline: str = "",
+    previous_body: str = "",
 ) -> list[CopyVariant]:
     persona = _PERSONAS[attribution]
     system = f"{_BASE_SYSTEM}\n\nVoice persona:\n{persona}"
 
     llm = _get_llm()
     prompt = _build_prompt(
-        product, attribution, themes, price_range, max_words, num_variants
+        product, attribution, themes, price_range, max_words, num_variants,
+        feedback=feedback, previous_headline=previous_headline, previous_body=previous_body,
     )
 
     response = llm.invoke([

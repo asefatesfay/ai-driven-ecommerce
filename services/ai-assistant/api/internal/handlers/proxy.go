@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/ai-ecommerce/ai-assistant-api/internal/middleware"
@@ -27,6 +28,21 @@ func NewProxyHandler(coreURL string) *ProxyHandler {
 		log.Fatalf("invalid core url %s: %v", coreURL, err)
 	}
 	proxy := httputil.NewSingleHostReverseProxy(target)
+	// Rewrite /api/v1/assistant/* → /api/v1/* before forwarding to the core.
+	proxy.Director = func(req *http.Request) {
+		req.URL.Scheme = target.Scheme
+		req.URL.Host = target.Host
+		req.Host = target.Host
+		req.URL.Path = strings.Replace(req.URL.Path, "/assistant", "", 1)
+	}
+	// Strip CORS headers from upstream — the gateway owns CORS.
+	proxy.ModifyResponse = func(resp *http.Response) error {
+		resp.Header.Del("Access-Control-Allow-Origin")
+		resp.Header.Del("Access-Control-Allow-Methods")
+		resp.Header.Del("Access-Control-Allow-Headers")
+		resp.Header.Del("Access-Control-Allow-Credentials")
+		return nil
+	}
 	proxy.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
 		log.Printf("proxy error: %v", err)
 		middleware.ServiceUnavailable(w, "ai-assistant core unavailable")

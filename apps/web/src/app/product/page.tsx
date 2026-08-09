@@ -1,6 +1,7 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import StarRating from "@/components/StarRating";
@@ -12,13 +13,49 @@ import FulfillmentOptions from "@/components/pdp/FulfillmentOptions";
 import DetailsAccordion from "@/components/pdp/DetailsAccordion";
 import ReviewsSection from "@/components/pdp/ReviewsSection";
 import StickyAddToBag from "@/components/pdp/StickyAddToBag";
-import { MOONLIGHT_PAJAMAS } from "@/lib/product-data";
+import { MOONLIGHT_PAJAMAS, type ProductDetail } from "@/lib/product-data";
+import { fetchProduct, fetchInventory } from "@/lib/api";
 
-const p = MOONLIGHT_PAJAMAS;
-
-const BREADCRUMB = ["Home", "Gifts", "Gifts by Recipient", "For Her"];
+function apiToProductDetail(p: Awaited<ReturnType<typeof fetchProduct>>, editorial?: { headline: string; copy: string; attribution: string }): ProductDetail {
+  return {
+    id: p.style_id,
+    brand: p.brand,
+    name: p.name,
+    badge: p.badge,
+    badgeType: p.badge_type as ProductDetail["badgeType"],
+    price: p.price,
+    salePrice: p.sale_price,
+    rating: p.rating,
+    reviewCount: p.review_count,
+    viewersNow: Math.floor(Math.random() * 400) + 50,
+    images: [p.image_url],
+    colors: p.colors.map((c) => ({
+      name: c.name,
+      swatch: c.hex,
+      imageUrl: p.image_url,
+    })),
+    sizes: p.sizes.map((s) => ({ label: s })),
+    fitNote: "",
+    description: p.description,
+    editorialHeadline: editorial?.headline,
+    editorialCopy: editorial?.copy,
+    attribution: editorial?.attribution,
+    shippingNote: "Free shipping & returns",
+    details: [
+      { label: "Details", items: [p.description] },
+      { label: "Brand", items: [p.brand] },
+    ],
+    reviews: [],
+    ratingBreakdown: { 5: 60, 4: 20, 3: 10, 2: 5, 1: 5 },
+  };
+}
 
 export default function ProductPage() {
+  const searchParams = useSearchParams();
+  const styleId = searchParams.get("style_id") ?? searchParams.get("id");
+
+  const [product, setProduct] = useState<ProductDetail>(MOONLIGHT_PAJAMAS);
+  const [loading, setLoading] = useState(!!styleId);
   const [selectedColor, setSelectedColor] = useState(0);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [sizeError, setSizeError] = useState(false);
@@ -26,14 +63,49 @@ export default function ProductPage() {
   const [added, setAdded] = useState(false);
   const addButtonRef = useRef<HTMLButtonElement>(null);
 
-  // Swap gallery images when color changes
-  const activeImages = [
-    p.colors[selectedColor].imageUrl,
-    ...p.images.filter((img) => img !== p.colors[selectedColor].imageUrl),
-  ];
+  useEffect(() => {
+    if (!styleId) return;
+    setLoading(true);
+    setSelectedColor(0);
+    setSelectedSize(null);
+
+    fetchProduct(Number(styleId))
+      .then(async (p) => {
+        // Try to fetch editorial copy for this product
+        let editorial;
+        try {
+          const CATALOG_URL = process.env.NEXT_PUBLIC_CATALOG_URL ?? "http://localhost:8081";
+          const res = await fetch(`${CATALOG_URL}/api/v1/editorial`);
+          const data = await res.json();
+          const match = (data.editorial_products ?? []).find(
+            (ep: { product: { style_id: string }; editorial_headline: string; editorial_copy: string; attribution: string }) =>
+              ep.product?.style_id === p.style_id
+          );
+          if (match) {
+            editorial = {
+              headline: match.editorial_headline,
+              copy: match.editorial_copy,
+              attribution: match.attribution,
+            };
+          }
+        } catch {
+          // editorial is optional, continue without it
+        }
+        setProduct(apiToProductDetail(p, editorial));
+      })
+      .catch(() => {
+        // fall back to static product
+        setProduct(MOONLIGHT_PAJAMAS);
+      })
+      .finally(() => setLoading(false));
+  }, [styleId]);
+
+  const activeImages = product.colors.length > 0
+    ? [product.colors[selectedColor]?.imageUrl ?? product.images[0], ...product.images.filter((img) => img !== product.colors[selectedColor]?.imageUrl)]
+    : product.images;
 
   function handleAddToBag() {
-    if (!selectedSize) {
+    if (product.sizes.length > 0 && !selectedSize) {
       setSizeError(true);
       document.getElementById("size-picker")?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
@@ -43,178 +115,161 @@ export default function ProductPage() {
     setTimeout(() => setAdded(false), 2500);
   }
 
+  const BREADCRUMB = ["Home", "Gifts", product.brand, product.name];
+
   return (
     <div className="min-h-screen bg-white">
       <SiteHeader />
 
-      <div className="max-w-screen-xl mx-auto px-4 sm:px-6 py-4">
-        {/* Breadcrumb */}
-        <nav className="flex items-center gap-1.5 mb-6">
-          {BREADCRUMB.map((crumb, i) => (
-            <span key={crumb} className="flex items-center gap-1.5">
-              {i > 0 && <span className="text-nordstrom-gray-300 text-[10px]">/</span>}
-              <a
-                href="#"
-                className={`text-[11px] tracking-wide transition-colors ${
+      {loading ? (
+        <div className="max-w-screen-xl mx-auto px-4 sm:px-6 py-20 text-center">
+          <div className="inline-flex gap-1.5">
+            <span className="w-2 h-2 bg-gray-300 rounded-full animate-bounce [animation-delay:0ms]" />
+            <span className="w-2 h-2 bg-gray-300 rounded-full animate-bounce [animation-delay:150ms]" />
+            <span className="w-2 h-2 bg-gray-300 rounded-full animate-bounce [animation-delay:300ms]" />
+          </div>
+        </div>
+      ) : (
+        <div className="max-w-screen-xl mx-auto px-4 sm:px-6 py-4">
+          {/* Breadcrumb */}
+          <nav className="flex items-center gap-1.5 mb-6 flex-wrap">
+            {BREADCRUMB.map((crumb, i) => (
+              <span key={i} className="flex items-center gap-1.5">
+                {i > 0 && <span className="text-nordstrom-gray-300 text-[10px]">/</span>}
+                <span className={`text-[11px] tracking-wide ${
                   i === BREADCRUMB.length - 1
-                    ? "text-nordstrom-gray-500 pointer-events-none"
-                    : "text-nordstrom-gray-700 hover:text-nordstrom-black"
-                }`}
-              >
-                {crumb}
-              </a>
-            </span>
-          ))}
-        </nav>
-
-        {/* Main content grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-14">
-          {/* Left: image gallery */}
-          <div className="relative">
-            <ImageGallery images={activeImages} productName={p.name} />
-          </div>
-
-          {/* Right: product info */}
-          <div className="flex flex-col gap-5">
-            {/* Badge + brand + title */}
-            <div>
-              {p.badge && p.badgeType && (
-                <div className="mb-2">
-                  <ProductBadge badge={p.badge} badgeType={p.badgeType} />
-                </div>
-              )}
-              <p className="text-[10px] tracking-[0.2em] uppercase text-nordstrom-gray-500 mb-1">{p.brand}</p>
-              <h1 className="text-xl sm:text-2xl font-light tracking-tight text-nordstrom-black leading-snug">
-                {p.name}
-              </h1>
-            </div>
-
-            {/* Rating + viewers */}
-            <div className="flex items-center gap-3 flex-wrap">
-              <a href="#reviews" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-                <StarRating rating={p.rating} reviewCount={p.reviewCount} />
-              </a>
-              <span className="text-nordstrom-gray-200 text-xs">|</span>
-              <span className="text-[11px] text-nordstrom-gray-500">
-                {p.viewersNow.toLocaleString()} people viewing now
+                    ? "text-nordstrom-gray-500"
+                    : "text-nordstrom-gray-700"
+                }`}>
+                  {crumb}
+                </span>
               </span>
+            ))}
+          </nav>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-14">
+            {/* Left: image gallery */}
+            <div className="relative">
+              <ImageGallery images={activeImages} productName={product.name} />
             </div>
 
-            {/* Price */}
-            <div>
-              {p.salePrice ? (
-                <div className="flex flex-col gap-0.5">
-                  <p className="text-sm font-medium text-red-600">
-                    Sale: ${p.salePrice.toFixed(2)}{p.salePriceMax ? ` – $${p.salePriceMax.toFixed(2)}` : ""}
-                  </p>
-                  <p className="text-xs text-nordstrom-gray-500">
-                    After Sale: ${p.price.toFixed(2)}
-                  </p>
-                </div>
-              ) : (
-                <p className="text-sm font-medium text-nordstrom-black">${p.price.toFixed(2)}</p>
-              )}
-            </div>
-
-            {/* Description */}
-            <p className="text-sm text-nordstrom-gray-700 leading-relaxed">{p.description}</p>
-
-            {/* Editorial callout */}
-            {p.editorialHeadline && (
-              <div className="bg-nordstrom-cream border-l-2 border-nordstrom-black px-4 py-3">
-                <p className="text-[10px] tracking-widest uppercase text-nordstrom-gray-500 mb-1">
-                  {p.attribution} Pick
-                </p>
-                <p className="text-sm font-medium text-nordstrom-black mb-1">{p.editorialHeadline}</p>
-                <p className="text-xs text-nordstrom-gray-700 leading-relaxed">{p.editorialCopy}</p>
+            {/* Right: product info */}
+            <div className="flex flex-col gap-5">
+              <div>
+                {product.badge && product.badgeType && (
+                  <div className="mb-2">
+                    <ProductBadge badge={product.badge} badgeType={product.badgeType} />
+                  </div>
+                )}
+                <p className="text-[10px] tracking-[0.2em] uppercase text-nordstrom-gray-500 mb-1">{product.brand}</p>
+                <h1 className="text-xl sm:text-2xl font-light tracking-tight text-nordstrom-black leading-snug">
+                  {product.name}
+                </h1>
               </div>
-            )}
 
-            {/* Color selector */}
-            <ColorSelector
-              colors={p.colors}
-              selected={selectedColor}
-              onSelect={(i) => { setSelectedColor(i); }}
-            />
+              <div className="flex items-center gap-3 flex-wrap">
+                <a href="#reviews" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+                  <StarRating rating={product.rating} reviewCount={product.reviewCount} />
+                </a>
+                <span className="text-nordstrom-gray-200 text-xs">|</span>
+                <span className="text-[11px] text-nordstrom-gray-500">
+                  {product.viewersNow.toLocaleString()} people viewing now
+                </span>
+              </div>
 
-            {/* Size picker */}
-            <div id="size-picker">
-              <SizePicker
-                sizes={p.sizes}
-                selected={selectedSize}
-                onSelect={(s) => { setSelectedSize(s); setSizeError(false); }}
-                fitNote={p.fitNote}
-                error={sizeError}
-              />
-            </div>
+              <div>
+                {product.salePrice ? (
+                  <div className="flex flex-col gap-0.5">
+                    <p className="text-sm font-medium text-red-600">
+                      Sale: ${product.salePrice.toFixed(2)}
+                    </p>
+                    <p className="text-xs text-nordstrom-gray-500">After Sale: ${product.price.toFixed(2)}</p>
+                  </div>
+                ) : (
+                  <p className="text-sm font-medium text-nordstrom-black">${product.price.toFixed(2)}</p>
+                )}
+              </div>
 
-            {/* Add to Bag + Wishlist */}
-            <div className="flex gap-3">
-              <button
-                ref={addButtonRef}
-                onClick={handleAddToBag}
-                className={`flex-1 py-3.5 text-xs tracking-widest uppercase font-medium transition-colors ${
-                  added
-                    ? "bg-nordstrom-gray-700 text-white"
-                    : "bg-nordstrom-black text-white hover:bg-nordstrom-gray-700"
-                }`}
-              >
-                {added ? "Added to Bag ✓" : "Add to Bag"}
-              </button>
-              <button
-                onClick={() => setWished(!wished)}
-                aria-label={wished ? "Remove from wishlist" : "Add to wishlist"}
-                className="border border-nordstrom-gray-300 px-4 hover:border-nordstrom-black transition-colors"
-              >
-                <svg
-                  width="18" height="18" viewBox="0 0 24 24"
-                  fill={wished ? "#000" : "none"} stroke="currentColor" strokeWidth="1.5"
+              <p className="text-sm text-nordstrom-gray-700 leading-relaxed">{product.description}</p>
+
+              {product.editorialHeadline && (
+                <div className="bg-nordstrom-cream border-l-2 border-nordstrom-black px-4 py-3">
+                  <p className="text-[10px] tracking-widest uppercase text-nordstrom-gray-500 mb-1">
+                    {product.attribution} Pick
+                  </p>
+                  <p className="text-sm font-medium text-nordstrom-black mb-1">{product.editorialHeadline}</p>
+                  <p className="text-xs text-nordstrom-gray-700 leading-relaxed">{product.editorialCopy}</p>
+                </div>
+              )}
+
+              {product.colors.length > 0 && (
+                <ColorSelector
+                  colors={product.colors}
+                  selected={selectedColor}
+                  onSelect={(i) => setSelectedColor(i)}
+                />
+              )}
+
+              {product.sizes.length > 0 && (
+                <div id="size-picker">
+                  <SizePicker
+                    sizes={product.sizes}
+                    selected={selectedSize}
+                    onSelect={(s) => { setSelectedSize(s); setSizeError(false); }}
+                    fitNote={product.fitNote}
+                    error={sizeError}
+                  />
+                </div>
+              )}
+
+              <div className="flex gap-3">
+                <button
+                  ref={addButtonRef}
+                  onClick={handleAddToBag}
+                  className={`flex-1 py-3.5 text-xs tracking-widest uppercase font-medium transition-colors ${
+                    added
+                      ? "bg-nordstrom-gray-700 text-white"
+                      : "bg-nordstrom-black text-white hover:bg-nordstrom-gray-700"
+                  }`}
                 >
-                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                </svg>
-              </button>
+                  {added ? "Added to Bag ✓" : "Add to Bag"}
+                </button>
+                <button
+                  onClick={() => setWished(!wished)}
+                  aria-label={wished ? "Remove from wishlist" : "Add to wishlist"}
+                  className="border border-nordstrom-gray-300 px-4 hover:border-nordstrom-black transition-colors"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24"
+                    fill={wished ? "#000" : "none"} stroke="currentColor" strokeWidth="1.5">
+                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                  </svg>
+                </button>
+              </div>
+
+              <FulfillmentOptions shippingNote={product.shippingNote} />
+              <DetailsAccordion sections={product.details} />
             </div>
+          </div>
 
-            {/* Promo card nudge */}
-            <div className="flex items-center gap-2 bg-nordstrom-gray-50 px-4 py-3 border border-nordstrom-gray-200">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C8A951" strokeWidth="1.5">
-                <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
-                <line x1="1" y1="10" x2="23" y2="10" />
-              </svg>
-              <p className="text-[11px] text-nordstrom-gray-700">
-                <span className="font-medium">Get $60 off</span> your next purchase with a new Nordstrom card.
-                <a href="#" className="underline ml-1 hover:text-nordstrom-black">Learn more</a>
-              </p>
-            </div>
-
-            {/* Fulfillment options */}
-            <FulfillmentOptions shippingNote={p.shippingNote} />
-
-            {/* Details accordions */}
-            <DetailsAccordion sections={p.details} />
+          <div id="reviews">
+            <ReviewsSection
+              rating={product.rating}
+              reviewCount={product.reviewCount}
+              breakdown={product.ratingBreakdown}
+              reviews={product.reviews}
+            />
           </div>
         </div>
-
-        {/* Reviews */}
-        <div id="reviews">
-          <ReviewsSection
-            rating={p.rating}
-            reviewCount={p.reviewCount}
-            breakdown={p.ratingBreakdown}
-            reviews={p.reviews}
-          />
-        </div>
-      </div>
+      )}
 
       <SiteFooter />
 
-      {/* Sticky add-to-bag */}
       <StickyAddToBag
-        productName={p.name}
-        brand={p.brand}
-        imageUrl={p.colors[selectedColor].imageUrl}
-        price={p.price}
-        salePrice={p.salePrice}
+        productName={product.name}
+        brand={product.brand}
+        imageUrl={product.colors[selectedColor]?.imageUrl ?? product.images[0]}
+        price={product.price}
+        salePrice={product.salePrice}
         selectedSize={selectedSize}
         onAddToBag={handleAddToBag}
         added={added}

@@ -1,4 +1,4 @@
-version: "3.9"
+# version field removed — obsolete in modern Docker Compose
 
 services:
   # ── API Gateway ──────────────────────────────────────────────────────────────
@@ -108,23 +108,24 @@ services:
       - "8088:8088"
     environment:
       PORT: "8088"
-      AI_CORE_URL: http://ai-assistant-core:9000
+      AI_CORE_URL: http://ai-assistant-core:19010
     depends_on:
       - ai-assistant-core
 
-  # ── AI Assistant — Python core (internal, port 9000) ─────────────────────────
+  # ── AI Assistant — Python core (internal, port 19010) ─────────────────────────
   ai-assistant-core:
     build: ./services/ai-assistant/core
     ports:
-      - "9000:9000"
+      - "19010:19010"
     environment:
-      PORT: "9000"
-      AWS_REGION: ${AWS_REGION:-us-east-1}
-      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
-      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
-      BEDROCK_MODEL_ID: ${BEDROCK_MODEL_ID:-anthropic.claude-3-5-haiku-20241022-v1:0}
+      PORT: "19010"
+      AWS_REGION: ${AWS_REGION:-us-west-2}
+      AWS_PROFILE: ${AWS_PROFILE:-}
+      BEDROCK_MODEL_ID: ${BEDROCK_MODEL_ID:-us.anthropic.claude-haiku-4-5-20251001-v1:0}
       CHROMA_HOST: chromadb
       CHROMA_PORT: "8200"
+    volumes:
+      - ${HOME}/.aws:/root/.aws:ro
     depends_on:
       - chromadb
 
@@ -162,10 +163,11 @@ services:
       - "9100:9100"
     environment:
       PORT: "9100"
-      AWS_REGION: ${AWS_REGION:-us-east-1}
-      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
-      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
-      BEDROCK_MODEL_ID: ${EDITORIAL_BEDROCK_MODEL_ID:-anthropic.claude-3-5-sonnet-20241022-v2:0}
+      AWS_REGION: ${AWS_REGION:-us-west-2}
+      AWS_PROFILE: ${AWS_PROFILE:-}
+      BEDROCK_MODEL_ID: ${EDITORIAL_BEDROCK_MODEL_ID:-us.anthropic.claude-haiku-4-5-20251001-v1:0}
+    volumes:
+      - ${HOME}/.aws:/root/.aws:ro
 
   # ── Frontend — storefront ─────────────────────────────────────────────────────
   web:

@@ -42,7 +42,7 @@ func main() {
 	r.Use(chimiddleware.RequestID)
 	r.Use(httprate.LimitAll(1000, 1))
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:3000", "*"},
+		AllowedOrigins:   []string{"http://localhost:3000", "http://localhost:3001", "http://localhost:8080"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"},
 		AllowedHeaders:   []string{"Accept", "Content-Type", "Authorization", "X-Request-ID"},
 		AllowCredentials: true,

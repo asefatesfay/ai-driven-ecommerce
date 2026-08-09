@@ -54,6 +54,9 @@ export interface GenerateRequest {
   price_range: PriceRange;
   max_words: number;
   num_variants: number;
+  feedback?: string;
+  previous_headline?: string;
+  previous_body?: string;
 }
 
 export const ATTRIBUTION_LABELS: Record<Attribution, string> = {

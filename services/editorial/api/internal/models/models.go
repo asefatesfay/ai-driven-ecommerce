@@ -43,12 +43,15 @@ type Draft struct {
 
 // GenerateRequest sent from the UI → Go API → Python core.
 type GenerateRequest struct {
-	StyleID     string      `json:"style_id"`
-	Attribution Attribution `json:"attribution"`
-	Themes      []string    `json:"themes"`
-	PriceRange  string      `json:"price_range"`
-	MaxWords    int         `json:"max_words"`
-	NumVariants int         `json:"num_variants"`
+	StyleID          string      `json:"style_id"`
+	Attribution      Attribution `json:"attribution"`
+	Themes           []string    `json:"themes"`
+	PriceRange       string      `json:"price_range"`
+	MaxWords         int         `json:"max_words"`
+	NumVariants      int         `json:"num_variants"`
+	Feedback         string      `json:"feedback,omitempty"`
+	PreviousHeadline string      `json:"previous_headline,omitempty"`
+	PreviousBody     string      `json:"previous_body,omitempty"`
 }
 
 // GenerateResponse comes back from the Python core.

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import AiChat from "@/components/AiChat";
 
 export const metadata: Metadata = {
   title: "Holiday Gift Edit 2026 | Nordstrom",
@@ -9,7 +10,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        {children}
+        <AiChat />
+      </body>
     </html>
   );
 }

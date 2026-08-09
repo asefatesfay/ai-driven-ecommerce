@@ -7,6 +7,11 @@ Theme = Literal["cozy", "luxury", "practical", "outdoor", "wellness", "host-gift
 PriceRange = Literal["under-50", "50-100", "100-200", "200-plus"]
 
 
+class ColorSwatch(BaseModel):
+    name: str
+    hex: str
+
+
 class ProductContext(BaseModel):
     """Product data fed into the generator — fetched from catalog service."""
     style_id: str
@@ -19,7 +24,7 @@ class ProductContext(BaseModel):
     rating: float = 0.0
     review_count: int = 0
     recipients: list[str] = Field(default_factory=list)
-    colors: list[str] = Field(default_factory=list)
+    colors: list[ColorSwatch | str] = Field(default_factory=list)
 
 
 class GenerateRequest(BaseModel):
@@ -28,7 +33,10 @@ class GenerateRequest(BaseModel):
     themes: list[Theme] = Field(default_factory=list)
     price_range: PriceRange
     max_words: int = Field(default=60, ge=20, le=120)
-    num_variants: int = Field(default=3, ge=1, le=5)
+    num_variants: int = Field(default=1, ge=1, le=5)
+    feedback: str = ""
+    previous_headline: str = ""
+    previous_body: str = ""
 
 
 class CopyVariant(BaseModel):

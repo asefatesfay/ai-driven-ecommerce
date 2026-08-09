@@ -115,7 +115,8 @@ func ApproveDraft(db *sql.DB, id int64, reviewedBy string) error {
 	return nil
 }
 
-// Publish transitions approved → published and returns the published draft.
+// Publish transitions approved → published, archives all other drafts for the
+// same style_id, and returns the published draft.
 func PublishDraft(db *sql.DB, id int64, publishedBy string) (*models.Draft, error) {
 	now := time.Now()
 	res, err := db.Exec(
@@ -129,7 +130,19 @@ func PublishDraft(db *sql.DB, id int64, publishedBy string) (*models.Draft, erro
 	if n == 0 {
 		return nil, fmt.Errorf("draft %d not in approved status", id)
 	}
-	return GetDraft(db, id)
+
+	draft, err := GetDraft(db, id)
+	if err != nil {
+		return nil, err
+	}
+
+	// Archive all other non-published drafts for this product.
+	db.Exec( //nolint:errcheck
+		"UPDATE drafts SET status='archived', updated_at=datetime('now') WHERE style_id=? AND id != ? AND status NOT IN ('published','archived')",
+		draft.StyleID, id,
+	)
+
+	return draft, nil
 }
 
 // Archive moves any non-published draft to archived.

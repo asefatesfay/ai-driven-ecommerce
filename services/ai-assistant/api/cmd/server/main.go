@@ -9,7 +9,6 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
-	"github.com/go-chi/cors"
 	"github.com/go-chi/httprate"
 
 	"github.com/ai-ecommerce/ai-assistant-api/internal/handlers"
@@ -17,7 +16,7 @@ import (
 
 func main() {
 	port := envOr("PORT", "8088")
-	coreURL := envOr("AI_CORE_URL", "http://localhost:9000")
+	coreURL := envOr("AI_CORE_URL", "http://localhost:19010")
 
 	proxy := handlers.NewProxyHandler(coreURL)
 
@@ -26,12 +25,6 @@ func main() {
 	r.Use(chimiddleware.Recoverer)
 	r.Use(chimiddleware.RequestID)
 	r.Use(chimiddleware.Timeout(35 * time.Second))
-	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:3000", "http://localhost:8080"},
-		AllowedMethods:   []string{"GET", "POST", "OPTIONS"},
-		AllowedHeaders:   []string{"Accept", "Content-Type", "Authorization"},
-		AllowCredentials: true,
-	}))
 	// Per-IP rate limiting: 60 requests/minute for AI endpoints
 	r.Use(httprate.LimitByIP(60, time.Minute))
 

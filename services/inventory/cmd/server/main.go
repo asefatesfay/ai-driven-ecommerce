@@ -14,6 +14,7 @@ import (
 
 	"github.com/ai-ecommerce/inventory/internal/db"
 	"github.com/ai-ecommerce/inventory/internal/handlers"
+	"github.com/ai-ecommerce/inventory/seed"
 )
 
 func main() {
@@ -42,6 +43,10 @@ func main() {
 		log.Fatalf("migrate: %v", err)
 	}
 
+	if err := seed.Run(database); err != nil {
+		log.Fatalf("seed: %v", err)
+	}
+
 	inventory := &handlers.InventoryHandler{DB: database}
 
 	r := chi.NewRouter()
@@ -49,7 +54,7 @@ func main() {
 	r.Use(chimiddleware.Recoverer)
 	r.Use(chimiddleware.RequestID)
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:3000", "http://localhost:8080"},
+		AllowedOrigins:   []string{"http://localhost:3000", "http://localhost:3001", "http://localhost:8080"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Content-Type", "Authorization"},
 		AllowCredentials: true,

@@ -74,6 +74,16 @@ type EditorialListParams struct {
 	Price     string
 }
 
+type UpsertEditorialRequest struct {
+	EditorialHeadline string   `json:"editorial_headline"`
+	EditorialCopy     string   `json:"editorial_copy"`
+	Attribution       string   `json:"attribution"`
+	FilterRecipient   []string `json:"filter_recipient"`
+	FilterTheme       []string `json:"filter_theme"`
+	FilterPrice       string   `json:"filter_price"`
+	Active            bool     `json:"active"`
+}
+
 // ── Inventory ────────────────────────────────────────────────────────────────
 
 type InventoryStatus string
