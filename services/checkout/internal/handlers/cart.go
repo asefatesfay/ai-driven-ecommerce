@@ -17,7 +17,17 @@ type CartHandler struct {
 	DB *sql.DB
 }
 
-// GET /api/v1/cart?user_id=&session_id=
+// GetCart returns the cart for a user or session.
+// @Summary Get cart
+// @Description Get or create a cart identified by user_id or session_id
+// @Tags cart
+// @Produce json
+// @Param user_id query int false "User ID"
+// @Param session_id query string false "Cart session ID"
+// @Success 200 {object} models.Cart
+// @Failure 400 {object} middleware.APIError
+// @Failure 500 {object} middleware.APIError
+// @Router /cart [get]
 func (h *CartHandler) GetCart(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	userID, _ := strconv.ParseInt(q.Get("user_id"), 10, 64)
@@ -36,7 +46,19 @@ func (h *CartHandler) GetCart(w http.ResponseWriter, r *http.Request) {
 	middleware.JSON(w, http.StatusOK, cart)
 }
 
-// POST /api/v1/cart/items?user_id=&session_id=
+// AddItem adds an item to the cart.
+// @Summary Add item to cart
+// @Description Add a product variant to a cart identified by user_id or session_id
+// @Tags cart
+// @Accept json
+// @Produce json
+// @Param user_id query int false "User ID"
+// @Param session_id query string false "Cart session ID"
+// @Param body body models.AddToCartRequest true "Item to add"
+// @Success 200 {object} models.Cart
+// @Failure 400 {object} middleware.APIError
+// @Failure 500 {object} middleware.APIError
+// @Router /cart/items [post]
 func (h *CartHandler) AddItem(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	userID, _ := strconv.ParseInt(q.Get("user_id"), 10, 64)
@@ -65,7 +87,20 @@ func (h *CartHandler) AddItem(w http.ResponseWriter, r *http.Request) {
 	middleware.JSON(w, http.StatusOK, updatedCart)
 }
 
-// PUT /api/v1/cart/items/{itemId}
+// UpdateItem updates the quantity of a cart item.
+// @Summary Update cart item
+// @Description Update the quantity of a specific item in the cart
+// @Tags cart
+// @Accept json
+// @Produce json
+// @Param itemId path int true "Cart Item ID"
+// @Param user_id query int false "User ID"
+// @Param session_id query string false "Cart session ID"
+// @Param body body models.UpdateCartItemRequest true "Updated quantity"
+// @Success 200 {object} models.Cart
+// @Failure 400 {object} middleware.APIError
+// @Failure 500 {object} middleware.APIError
+// @Router /cart/items/{itemId} [put]
 func (h *CartHandler) UpdateItem(w http.ResponseWriter, r *http.Request) {
 	itemID, err := strconv.ParseInt(chi.URLParam(r, "itemId"), 10, 64)
 	if err != nil {
@@ -95,7 +130,18 @@ func (h *CartHandler) UpdateItem(w http.ResponseWriter, r *http.Request) {
 	middleware.JSON(w, http.StatusOK, updatedCart)
 }
 
-// DELETE /api/v1/cart/items/{itemId}
+// RemoveItem removes an item from the cart.
+// @Summary Remove cart item
+// @Description Remove a specific item from the cart
+// @Tags cart
+// @Produce json
+// @Param itemId path int true "Cart Item ID"
+// @Param user_id query int false "User ID"
+// @Param session_id query string false "Cart session ID"
+// @Success 200 {object} models.Cart
+// @Failure 400 {object} middleware.APIError
+// @Failure 500 {object} middleware.APIError
+// @Router /cart/items/{itemId} [delete]
 func (h *CartHandler) RemoveItem(w http.ResponseWriter, r *http.Request) {
 	itemID, err := strconv.ParseInt(chi.URLParam(r, "itemId"), 10, 64)
 	if err != nil {
@@ -116,7 +162,16 @@ func (h *CartHandler) RemoveItem(w http.ResponseWriter, r *http.Request) {
 	middleware.JSON(w, http.StatusOK, updatedCart)
 }
 
-// DELETE /api/v1/cart?user_id=&session_id=
+// ClearCart removes all items from a cart.
+// @Summary Clear cart
+// @Description Remove all items from a cart identified by user_id or session_id
+// @Tags cart
+// @Produce json
+// @Param user_id query int false "User ID"
+// @Param session_id query string false "Cart session ID"
+// @Success 200 {object} map[string]string
+// @Failure 500 {object} middleware.APIError
+// @Router /cart [delete]
 func (h *CartHandler) ClearCart(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	userID, _ := strconv.ParseInt(q.Get("user_id"), 10, 64)

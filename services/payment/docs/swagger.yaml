@@ -1,0 +1,171 @@
+basePath: /api/v1
+definitions:
+  middleware.APIError:
+    properties:
+      code:
+        type: integer
+      message:
+        type: string
+    type: object
+  models.AuthoriseRequest:
+    properties:
+      amount:
+        type: number
+      card_number:
+        type: string
+      currency:
+        type: string
+      cvv:
+        type: string
+      expiry_month:
+        type: string
+      expiry_year:
+        type: string
+      name_on_card:
+        type: string
+      session_id:
+        type: string
+    type: object
+  models.AuthoriseResponse:
+    properties:
+      message:
+        type: string
+      payment:
+        $ref: '#/definitions/models.Payment'
+      success:
+        type: boolean
+    type: object
+  models.Payment:
+    properties:
+      amount:
+        type: number
+      card_brand:
+        type: string
+      card_last4:
+        type: string
+      created_at:
+        type: string
+      currency:
+        type: string
+      id:
+        type: integer
+      name_on_card:
+        type: string
+      order_ref:
+        type: string
+      session_id:
+        type: string
+      status:
+        $ref: '#/definitions/models.PaymentStatus'
+      updated_at:
+        type: string
+    type: object
+  models.PaymentStatus:
+    enum:
+    - pending
+    - authorised
+    - declined
+    - refunded
+    type: string
+    x-enum-varnames:
+    - StatusPending
+    - StatusAuthorised
+    - StatusDeclined
+    - StatusRefunded
+host: localhost:8090
+info:
+  contact: {}
+  description: Payment authorisation and management
+  title: Payment Service API
+  version: "1.0"
+paths:
+  /payments:
+    get:
+      description: List all payments associated with a checkout session
+      parameters:
+      - description: Cart session ID
+        in: query
+        name: session_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+      summary: List payments by session
+      tags:
+      - payments
+  /payments/{id}:
+    get:
+      description: Get a single payment by its numeric ID
+      parameters:
+      - description: Payment ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Payment'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+      summary: Get payment
+      tags:
+      - payments
+  /payments/authorise:
+    post:
+      consumes:
+      - application/json
+      description: Authorise a card payment for a checkout session
+      parameters:
+      - description: Authorisation request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.AuthoriseRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.AuthoriseResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+      summary: Authorise payment
+      tags:
+      - payments
+swagger: "2.0"

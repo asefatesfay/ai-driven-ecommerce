@@ -1,0 +1,196 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "AI chat assistant and semantic search proxy",
+        "title": "AI Assistant API",
+        "contact": {},
+        "version": "1.0"
+    },
+    "host": "localhost:8088",
+    "basePath": "/api/v1",
+    "paths": {
+        "/assistant/chat": {
+            "post": {
+                "description": "Send a chat message to the AI assistant; requires message and session_id fields",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "assistant"
+                ],
+                "summary": "Chat with AI assistant",
+                "parameters": [
+                    {
+                        "description": "Chat request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ChatRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIError"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIError"
+                        }
+                    }
+                }
+            }
+        },
+        "/assistant/index": {
+            "post": {
+                "description": "Proxy request to the Python AI core service",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "assistant"
+                ],
+                "summary": "Forward to AI core",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIError"
+                        }
+                    }
+                }
+            }
+        },
+        "/assistant/search": {
+            "post": {
+                "description": "Perform semantic search over the product catalog; requires query field",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "assistant"
+                ],
+                "summary": "Semantic product search",
+                "parameters": [
+                    {
+                        "description": "Search request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.SearchRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIError"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIError"
+                        }
+                    }
+                }
+            }
+        },
+        "/health": {
+            "get": {
+                "description": "Check the health of the AI assistant gateway and Python core",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "assistant"
+                ],
+                "summary": "Health check",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIError"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "handlers.ChatRequest": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                },
+                "session_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.SearchRequest": {
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string"
+                }
+            }
+        },
+        "middleware.APIError": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}

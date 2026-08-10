@@ -1,3 +1,8 @@
+// @title Inventory Service API
+// @version 1.0
+// @description Product inventory management and sync
+// @host localhost:8082
+// @BasePath /api/v1
 package main
 
 import (
@@ -11,10 +16,12 @@ import (
 	"github.com/go-chi/chi/v5"
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
+	httpSwagger "github.com/swaggo/http-swagger"
 
 	"github.com/ai-ecommerce/inventory/internal/db"
 	"github.com/ai-ecommerce/inventory/internal/handlers"
 	"github.com/ai-ecommerce/inventory/seed"
+	_ "github.com/ai-ecommerce/inventory/docs"
 )
 
 func main() {
@@ -64,6 +71,10 @@ func main() {
 		w.Header().Set("Content-Type", "application/json")
 		fmt.Fprintln(w, `{"status":"ok","service":"inventory"}`)
 	})
+
+	r.Get("/swagger/*", httpSwagger.Handler(
+		httpSwagger.URL("/swagger/doc.json"),
+	))
 
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Get("/inventory", inventory.BulkGetInventory)

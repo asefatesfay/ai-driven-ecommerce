@@ -1,3 +1,8 @@
+// @title AI Assistant API
+// @version 1.0
+// @description AI chat assistant and semantic search proxy
+// @host localhost:8088
+// @BasePath /api/v1
 package main
 
 import (
@@ -10,8 +15,10 @@ import (
 	"github.com/go-chi/chi/v5"
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/httprate"
+	httpSwagger "github.com/swaggo/http-swagger"
 
 	"github.com/ai-ecommerce/ai-assistant-api/internal/handlers"
+	_ "github.com/ai-ecommerce/ai-assistant-api/docs"
 )
 
 func main() {
@@ -29,6 +36,10 @@ func main() {
 	r.Use(httprate.LimitByIP(60, time.Minute))
 
 	r.Get("/health", proxy.Health)
+
+	r.Get("/swagger/*", httpSwagger.Handler(
+		httpSwagger.URL("/swagger/doc.json"),
+	))
 
 	r.Route("/api/v1", func(r chi.Router) {
 		// Chat — validate then forward to Python core

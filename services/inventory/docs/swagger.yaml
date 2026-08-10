@@ -1,0 +1,188 @@
+basePath: /api/v1
+definitions:
+  middleware.APIError:
+    properties:
+      code:
+        type: integer
+      message:
+        type: string
+    type: object
+  models.InventoryAdjustment:
+    properties:
+      color_name:
+        type: string
+      delta:
+        description: positive = restock, negative = sold/reserve
+        type: integer
+      product_id:
+        type: integer
+      reason:
+        type: string
+      size:
+        type: string
+      style_id:
+        type: string
+    type: object
+  models.InventoryEntry:
+    properties:
+      available_qty:
+        type: integer
+      color_name:
+        type: string
+      id:
+        type: integer
+      last_synced_at:
+        type: string
+      product_id:
+        type: integer
+      quantity:
+        type: integer
+      reserved_qty:
+        type: integer
+      size:
+        type: string
+      status:
+        $ref: '#/definitions/models.InventoryStatus'
+      style_id:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  models.InventoryStatus:
+    enum:
+    - in_stock
+    - low_stock
+    - out_of_stock
+    type: string
+    x-enum-varnames:
+    - StatusInStock
+    - StatusLowStock
+    - StatusOutOfStock
+  models.ProductInventory:
+    properties:
+      in_stock:
+        description: true if ANY variant has qty > 0
+        type: boolean
+      product_id:
+        type: integer
+      style_id:
+        type: string
+      variants:
+        items:
+          $ref: '#/definitions/models.InventoryEntry'
+        type: array
+    type: object
+host: localhost:8082
+info:
+  contact: {}
+  description: Product inventory management and sync
+  title: Inventory Service API
+  version: "1.0"
+paths:
+  /inventory:
+    get:
+      description: Get inventory for multiple products using a comma-separated list
+        of style IDs
+      parameters:
+      - description: Comma-separated style IDs
+        in: query
+        name: style_ids
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              $ref: '#/definitions/models.ProductInventory'
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+      summary: Bulk get inventory by style IDs
+      tags:
+      - inventory
+  /inventory/{productId}:
+    get:
+      description: Get inventory variants for a product by its numeric product ID
+      parameters:
+      - description: Product ID
+        in: path
+        name: productId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ProductInventory'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+      summary: Get product inventory
+      tags:
+      - inventory
+  /inventory/adjust:
+    post:
+      consumes:
+      - application/json
+      description: Apply a delta (positive=restock, negative=sold/reserve) to a product
+        variant
+      parameters:
+      - description: Inventory adjustment
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.InventoryAdjustment'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ProductInventory'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+      summary: Adjust inventory
+      tags:
+      - inventory
+  /inventory/sync:
+    post:
+      description: Trigger the editorial active-flag sync based on current stock levels
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+      summary: Sync inventory
+      tags:
+      - inventory
+swagger: "2.0"

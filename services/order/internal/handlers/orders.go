@@ -17,7 +17,17 @@ type OrderHandler struct {
 	DB *sql.DB
 }
 
-// POST /api/v1/orders
+// CreateOrder creates a new order.
+// @Summary Create order
+// @Description Create a new order for a user with line items and shipping address
+// @Tags orders
+// @Accept json
+// @Produce json
+// @Param body body models.CreateOrderRequest true "Order creation request"
+// @Success 201 {object} models.Order
+// @Failure 400 {object} middleware.APIError
+// @Failure 500 {object} middleware.APIError
+// @Router /orders [post]
 func (h *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	var req models.CreateOrderRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -37,7 +47,17 @@ func (h *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	middleware.JSON(w, http.StatusCreated, order)
 }
 
-// GET /api/v1/orders/{id}
+// GetOrder returns an order by ID.
+// @Summary Get order
+// @Description Get a single order by its numeric ID
+// @Tags orders
+// @Produce json
+// @Param id path int true "Order ID"
+// @Success 200 {object} models.Order
+// @Failure 400 {object} middleware.APIError
+// @Failure 404 {object} middleware.APIError
+// @Failure 500 {object} middleware.APIError
+// @Router /orders/{id} [get]
 func (h *OrderHandler) GetOrder(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 	if err != nil {
@@ -56,7 +76,19 @@ func (h *OrderHandler) GetOrder(w http.ResponseWriter, r *http.Request) {
 	middleware.JSON(w, http.StatusOK, order)
 }
 
-// GET /api/v1/orders?user_id=&status=&page=&page_size=
+// ListOrders returns a paginated list of orders for a user.
+// @Summary List orders
+// @Description Get paginated orders for a user with optional status filter
+// @Tags orders
+// @Produce json
+// @Param user_id query int true "User ID"
+// @Param status query string false "Filter by order status"
+// @Param page query int false "Page number" default(1)
+// @Param page_size query int false "Items per page" default(20)
+// @Success 200 {object} models.OrderListResult
+// @Failure 400 {object} middleware.APIError
+// @Failure 500 {object} middleware.APIError
+// @Router /orders [get]
 func (h *OrderHandler) ListOrders(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	userID, _ := strconv.ParseInt(q.Get("user_id"), 10, 64)
@@ -86,7 +118,18 @@ func (h *OrderHandler) ListOrders(w http.ResponseWriter, r *http.Request) {
 	middleware.JSON(w, http.StatusOK, result)
 }
 
-// PUT /api/v1/orders/{id}/status
+// UpdateOrderStatus updates the status of an order.
+// @Summary Update order status
+// @Description Update the status and optional tracking number for an order
+// @Tags orders
+// @Accept json
+// @Produce json
+// @Param id path int true "Order ID"
+// @Param body body models.UpdateOrderStatusRequest true "Status update"
+// @Success 200 {object} models.Order
+// @Failure 400 {object} middleware.APIError
+// @Failure 500 {object} middleware.APIError
+// @Router /orders/{id}/status [put]
 func (h *OrderHandler) UpdateOrderStatus(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 	if err != nil {

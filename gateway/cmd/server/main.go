@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"net/http/httputil"
@@ -21,6 +22,46 @@ type ServiceConfig struct {
 	Prefix  string
 }
 
+// swaggerUIHTML returns a Swagger UI page that loads all service specs via the
+// gateway's own /swagger/specs/* proxy, so there are no cross-origin issues.
+func swaggerUIHTML(specs []ServiceConfig) string {
+	// Build the JS urls array for the Swagger UI multi-spec dropdown.
+	var urlEntries []string
+	for _, s := range specs {
+		urlEntries = append(urlEntries,
+			fmt.Sprintf(`{url:"/swagger/specs/%s/swagger.json",name:"%s"}`, s.Name, s.Name),
+		)
+	}
+	urlsJS := "[" + strings.Join(urlEntries, ",") + "]"
+
+	return `<!DOCTYPE html>
+<html>
+<head>
+  <title>API Docs — ai-ecommerce</title>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css">
+</head>
+<body>
+<div id="swagger-ui"></div>
+<script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
+<script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-standalone-preset.js"></script>
+<script>
+window.onload = function() {
+  SwaggerUIBundle({
+    urls: ` + urlsJS + `,
+    dom_id: '#swagger-ui',
+    presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
+    layout: "StandaloneLayout",
+    deepLinking: true,
+    displayRequestDuration: true,
+  });
+};
+</script>
+</body>
+</html>`
+}
+
 func main() {
 	port := envOr("PORT", "8080")
 
@@ -35,6 +76,12 @@ func main() {
 		{Name: "ai-assistant", BaseURL: envOr("AI_ASSISTANT_URL", "http://localhost:8088"), Prefix: "/ai"},
 		{Name: "editorial", BaseURL: envOr("EDITORIAL_URL", "http://localhost:8089"), Prefix: "/editorial"},
 		{Name: "payment", BaseURL: envOr("PAYMENT_URL", "http://localhost:8090"), Prefix: "/payment"},
+	}
+
+	// Build a name→baseURL map for the swagger spec proxy.
+	svcByName := make(map[string]string, len(services))
+	for _, s := range services {
+		svcByName[s.Name] = s.BaseURL
 	}
 
 	r := chi.NewRouter()
@@ -54,6 +101,38 @@ func main() {
 		fmt.Fprintln(w, `{"status":"ok","service":"gateway"}`)
 	})
 
+	// ── Unified Swagger UI ───────────────────────────────────────────────────
+	//
+	// GET /swagger           → Swagger UI (multi-spec dropdown)
+	// GET /swagger/specs/{svc}/swagger.json  → proxy to svc's /docs/swagger.json
+	//
+	r.Get("/swagger", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		fmt.Fprint(w, swaggerUIHTML(services))
+	})
+
+	// Proxy each service's swagger.json to avoid browser CORS restrictions.
+	// Each service mounts httpSwagger at /swagger/*, which exposes the spec
+	// at /swagger/doc.json.
+	r.Get("/swagger/specs/{svc}/swagger.json", func(w http.ResponseWriter, r *http.Request) {
+		svcName := chi.URLParam(r, "svc")
+		baseURL, ok := svcByName[svcName]
+		if !ok {
+			http.Error(w, "unknown service", http.StatusNotFound)
+			return
+		}
+		resp, err := http.Get(baseURL + "/swagger/doc.json")
+		if err != nil {
+			http.Error(w, "upstream unavailable: "+err.Error(), http.StatusBadGateway)
+			return
+		}
+		defer resp.Body.Close()
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(resp.StatusCode)
+		io.Copy(w, resp.Body) //nolint:errcheck
+	})
+
+	// ── Service reverse proxies ──────────────────────────────────────────────
 	for _, svc := range services {
 		target, err := url.Parse(svc.BaseURL)
 		if err != nil {
@@ -101,6 +180,7 @@ func main() {
 	})
 
 	log.Printf("gateway on :%s", port)
+	log.Printf("unified swagger UI → http://localhost:%s/swagger", port)
 	log.Fatal(http.ListenAndServe(":"+port, r))
 }
 

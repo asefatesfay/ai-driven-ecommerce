@@ -17,7 +17,17 @@ type UserHandler struct {
 	DB *sql.DB
 }
 
-// POST /api/v1/auth/register
+// Register creates a new user account.
+// @Summary Register user
+// @Description Register a new customer account with email and password
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param body body models.RegisterRequest true "Registration details"
+// @Success 201 {object} models.User
+// @Failure 400 {object} middleware.APIError
+// @Failure 500 {object} middleware.APIError
+// @Router /auth/register [post]
 func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 	var req models.RegisterRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -36,7 +46,18 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 	middleware.JSON(w, http.StatusCreated, user)
 }
 
-// POST /api/v1/auth/login
+// Login authenticates a user and returns an access token.
+// @Summary Login user
+// @Description Authenticate with email and password, returns user and access token
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param body body models.LoginRequest true "Login credentials"
+// @Success 200 {object} models.AuthResponse
+// @Failure 400 {object} middleware.APIError
+// @Failure 401 {object} middleware.APIError
+// @Failure 500 {object} middleware.APIError
+// @Router /auth/login [post]
 func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var req models.LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -55,7 +76,17 @@ func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 	middleware.JSON(w, http.StatusOK, models.AuthResponse{User: *user, AccessToken: token})
 }
 
-// GET /api/v1/users/{id}
+// GetProfile returns a user profile by ID.
+// @Summary Get user profile
+// @Description Get the profile of a user by their numeric ID
+// @Tags users
+// @Produce json
+// @Param id path int true "User ID"
+// @Success 200 {object} models.User
+// @Failure 400 {object} middleware.APIError
+// @Failure 404 {object} middleware.APIError
+// @Failure 500 {object} middleware.APIError
+// @Router /users/{id} [get]
 func (h *UserHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 	if err != nil {
@@ -74,7 +105,18 @@ func (h *UserHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
 	middleware.JSON(w, http.StatusOK, user)
 }
 
-// PUT /api/v1/users/{id}
+// UpdateProfile updates a user's profile.
+// @Summary Update user profile
+// @Description Update profile fields for an existing user
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param id path int true "User ID"
+// @Param body body models.UpdateProfileRequest true "Profile update"
+// @Success 200 {object} models.User
+// @Failure 400 {object} middleware.APIError
+// @Failure 500 {object} middleware.APIError
+// @Router /users/{id} [put]
 func (h *UserHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 	if err != nil {
@@ -94,7 +136,16 @@ func (h *UserHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	middleware.JSON(w, http.StatusOK, user)
 }
 
-// GET /api/v1/users/{id}/addresses
+// ListAddresses returns all saved addresses for a user.
+// @Summary List user addresses
+// @Description Get all saved shipping addresses for a user
+// @Tags users
+// @Produce json
+// @Param id path int true "User ID"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} middleware.APIError
+// @Failure 500 {object} middleware.APIError
+// @Router /users/{id}/addresses [get]
 func (h *UserHandler) ListAddresses(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 	if err != nil {
@@ -112,7 +163,18 @@ func (h *UserHandler) ListAddresses(w http.ResponseWriter, r *http.Request) {
 	middleware.JSON(w, http.StatusOK, map[string]any{"addresses": addrs})
 }
 
-// POST /api/v1/users/{id}/addresses
+// CreateAddress adds a new address for a user.
+// @Summary Create user address
+// @Description Add a new shipping address for a user
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param id path int true "User ID"
+// @Param body body models.Address true "Address details"
+// @Success 201 {object} models.Address
+// @Failure 400 {object} middleware.APIError
+// @Failure 500 {object} middleware.APIError
+// @Router /users/{id}/addresses [post]
 func (h *UserHandler) CreateAddress(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 	if err != nil {

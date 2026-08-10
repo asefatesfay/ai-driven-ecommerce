@@ -38,6 +38,10 @@ graph TD
         EDICORE["Editorial Core\n:9100 · Python · FastAPI"]
     end
 
+    subgraph PaymentStack["Payment"]
+        PAY["Payment Service\n:8090 · Go · SQLite"]
+    end
+
     subgraph AWS["AWS Bedrock · us-west-2"]
         CLAUDE_H["Claude 3.5 Haiku\nai-assistant"]
         CLAUDE_S["Claude 3.5 Sonnet\neditorial"]
@@ -48,6 +52,7 @@ graph TD
     GATEWAY --> CAT & INV & ORD & CHK & USR & NOT & ING
     GATEWAY --> AIAPI
     GATEWAY --> EDIAPI
+    GATEWAY --> PAY
     AIAPI --> AICORE
     EDIAPI --> EDICORE
     AICORE --> CHROMA
@@ -75,8 +80,9 @@ graph TD
 | AI Assistant Core | `services/ai-assistant/core/` | 19010 | Python | Claude RAG chat and semantic search via ChromaDB |
 | Editorial API | `services/editorial/api/` | 8089 | Go | Draft CRUD, workflow transitions, catalog publish |
 | Editorial Core | `services/editorial/core/` | 9100 | Python | Claude copy generation with attribution personas |
+| Payment | `services/payment/` | 8090 | Go | Card authorisation, order ref generation, payment history |
 | ChromaDB | Docker image | 8200 | — | Vector store for product catalog embeddings |
-| Storefront | `apps/web/` | 3000 | Next.js 15 | Customer-facing shopping UI |
+| Storefront | `apps/web/` | 3000 | Next.js 15 | Customer-facing shopping UI with cart, AI chat, search |
 | Editorial UI | `apps/editorial/` | 3001 | Next.js 15 | Internal editorial tool for AI copy review |
 
 ### Gateway Routing
@@ -94,6 +100,7 @@ The gateway strips the route prefix before proxying. A request to `GET /catalog/
 | `/ingestion/*` | ingestion :8087 |
 | `/ai/*` | ai-assistant :8088 |
 | `/editorial/*` | editorial :8089 |
+| `/payment/*` | payment :8090 |
 | `GET /health` | gateway self |
 | `GET /services/health` | polls all upstreams |
 
@@ -172,8 +179,7 @@ stateDiagram-v2
 | AWS CLI / credentials | — | Bedrock access in `us-west-2` |
 
 AWS Bedrock model access must be requested in the AWS console for `us-west-2`:
-- `us.anthropic.claude-haiku-4-5-20251001-v1:0` (AI assistant default)
-- `us.anthropic.claude-haiku-4-5-20251001-v1:0` (editorial core default)
+- `us.anthropic.claude-haiku-4-5-20251001-v1:0` (both AI assistant and editorial core)
 
 ### Docker via Colima
 
@@ -338,6 +344,7 @@ Expected output:
  ai-assistant core OK
  editorial API OK
  editorial core OK
+ payment OK
  chromadb OK
 ```
 
@@ -355,8 +362,8 @@ Expected output:
 | `dev-ai-api` | Start Go AI API proxy on port 8088, pointing to core at `http://localhost:19010` |
 | `dev-editorial-core` | Start Python editorial core on port 9100 with `--reload` |
 | `dev-editorial-api` | Start Go editorial API proxy on port 8089 |
-| `dev-go` | Start all 7 core Go services + both Go proxies + gateway in parallel (Ctrl-C stops all) |
-| `dev-web` | Start storefront Next.js dev server (`apps/web`, port 3000) |
+| `dev-go` | Start all Go services (catalog, inventory, order, checkout, user, notification, ingestion, payment, both proxies, gateway) in parallel (Ctrl-C stops all) |
+| `dev-web` | Start storefront Next.js dev server (`apps/web`, port 3000) — sets `NODE_EXTRA_CA_CERTS` for corporate network |
 | `dev-editorial-ui` | Start editorial Next.js dev server (`apps/editorial`, port 3001) |
 | `health` | `curl` all service `/health` endpoints and report status |
 | `help` | Print target summary |
@@ -416,6 +423,13 @@ Named volumes: `catalog-data`, `inventory-data`, `order-data`, `checkout-data`, 
 | `CATALOG_URL` | `http://localhost:8081` |
 | `PORT` | `8089` |
 
+### Payment (`services/payment`)
+
+| Variable | Default |
+|---|---|
+| `PORT` | `8090` |
+| `DATABASE_URL` | `./payment.db` |
+
 ### Go core services (catalog, inventory, order, checkout, user, notification)
 
 | Variable | Default |
@@ -460,6 +474,7 @@ Named volumes: `catalog-data`, `inventory-data`, `order-data`, `checkout-data`, 
 | `NEXT_PUBLIC_NOTIFICATION_URL` | `http://localhost:8086` |
 | `NEXT_PUBLIC_INGESTION_URL` | `http://localhost:8087` |
 | `NEXT_PUBLIC_AI_ASSISTANT_URL` | `http://localhost:8088` |
+| `NEXT_PUBLIC_PAYMENT_URL` | `http://localhost:8090` |
 
 ### Editorial UI (`apps/editorial/.env.local`)
 
@@ -508,11 +523,11 @@ All services expose `GET /health` returning `{"status":"ok","service":"<name>"}`
 
 | Method | Path | Description |
 |---|---|---|
-| `GET` | `/api/v1/cart` | Get or create cart. Query: `user_id` or `session_id` |
-| `POST` | `/api/v1/cart/items` | Add item. Required: `product_id`, `quantity` ≥ 1 |
-| `PUT` | `/api/v1/cart/items/{itemId}` | Update item quantity |
-| `DELETE` | `/api/v1/cart/items/{itemId}` | Remove item |
-| `DELETE` | `/api/v1/cart` | Clear cart |
+| `GET` | `/api/v1/cart?session_id=X` | Get or create cart by session |
+| `POST` | `/api/v1/cart/items?session_id=X` | Add item. Body: `{ product_id, quantity, unit_price }` |
+| `PUT` | `/api/v1/cart/items/{itemId}?session_id=X` | Update item quantity |
+| `DELETE` | `/api/v1/cart/items/{itemId}?session_id=X` | Remove item |
+| `DELETE` | `/api/v1/cart?session_id=X` | Clear cart |
 | `GET` | `/api/v1/wishlist/{userId}` | Get wishlist |
 | `POST` | `/api/v1/wishlist/{userId}` | Add to wishlist. Required: `product_id` |
 | `DELETE` | `/api/v1/wishlist/{userId}/{productId}` | Remove from wishlist |
@@ -625,6 +640,47 @@ Valid `price_range`: `under-50`, `50-100`, `100-200`, `200-plus`
 
 The editorial core OpenAPI docs are available at `http://localhost:9100/docs` while `dev-editorial-core` is running.
 
+### Payment — port 8090
+
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/api/v1/payments/authorise` | Authorise a card payment. Required: `session_id`, `amount`, `card_number`, `expiry_month`, `expiry_year`, `cvv`, `name_on_card` |
+| `GET` | `/api/v1/payments?session_id=X` | List payments for a session |
+| `GET` | `/api/v1/payments/{id}` | Get payment by ID |
+
+**Authorise request example:**
+```json
+{
+  "session_id": "cart_abc123",
+  "amount": 329.00,
+  "currency": "USD",
+  "card_number": "4111111111111111",
+  "expiry_month": "12",
+  "expiry_year": "27",
+  "cvv": "123",
+  "name_on_card": "Jane Smith"
+}
+```
+
+**Authorise response:**
+```json
+{
+  "success": true,
+  "message": "Payment authorised",
+  "payment": {
+    "id": 1,
+    "order_ref": "ORD-A1B2C3D4",
+    "amount": 329.00,
+    "currency": "USD",
+    "status": "authorised",
+    "card_last4": "1111",
+    "card_brand": "Visa"
+  }
+}
+```
+
+To simulate a **decline**, use a card number ending in `0000`.
+
 ### Gateway health
 
 | Method | Path | Description |
@@ -648,6 +704,7 @@ services/user/migrations/001_init.sql
 services/notification/migrations/001_init.sql
 services/ingestion/migrations/001_init.sql
 services/editorial/api/migrations/001_init.sql — drafts table with status workflow
+services/payment/migrations/001_init.sql      — payments table (status, card_last4, order_ref)
 ```
 
 ChromaDB stores product text embeddings in the `products` collection using cosine similarity (`hnsw:space=cosine`). Products must be indexed via `POST /api/v1/assistant/index` before semantic search and chat grounding work. The ingestion service calls this endpoint as part of a bulk product import.
@@ -671,13 +728,14 @@ ChromaDB stores product text embeddings in the `products` collection using cosin
 
 ## Repository Layout Notes
 
-Three directories at the repository root are legacy code from before the microservice restructure and are retained pending verification that the new services are fully tested:
+### Storefront features (`apps/web`)
 
-- `apis/` — original Go monolith (catalog + inventory combined)
-- `src/` — original Next.js source (now at `apps/web/src/`)
-- `ui/` — original empty Next.js shell (now `apps/web/`)
-
-Do not add new features to these directories.
+- **Product pages** — dynamic PDP at `/product?style_id=X`, fetches live catalog + inventory data, shows sold-out sizes and low-stock warnings
+- **AI Shopping Assistant** — floating chat bubble on every page, calls the AI assistant API, shows grounded product recommendations with links, suggested queries from live catalog categories
+- **Cart** — session-based cart backed by the checkout service, item count badge in header, `/cart` page with item list and order summary
+- **Checkout & Payment** — inline payment form on the cart page, submits to the payment service, shows order confirmation with order ref on success; use card ending `0000` to test decline
+- **Search** — header search navigates to `/gifts?search=...` and filters both the editorial grid and product grid
+- **Gifts page** — `/gifts` shows the AI-generated editorial grid and a filterable/sortable standard product grid, both backed by live catalog data
 
 ---
 

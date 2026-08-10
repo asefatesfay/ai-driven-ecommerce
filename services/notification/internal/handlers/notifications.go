@@ -17,7 +17,17 @@ type NotificationHandler struct {
 	DB *sql.DB
 }
 
-// POST /api/v1/notifications/send
+// Send sends a notification to a user.
+// @Summary Send notification
+// @Description Send a notification to a user via the specified channel
+// @Tags notifications
+// @Accept json
+// @Produce json
+// @Param body body models.SendNotificationRequest true "Notification request"
+// @Success 201 {object} models.Notification
+// @Failure 400 {object} middleware.APIError
+// @Failure 500 {object} middleware.APIError
+// @Router /notifications/send [post]
 func (h *NotificationHandler) Send(w http.ResponseWriter, r *http.Request) {
 	var req models.SendNotificationRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -41,7 +51,16 @@ func (h *NotificationHandler) Send(w http.ResponseWriter, r *http.Request) {
 	middleware.JSON(w, http.StatusCreated, n)
 }
 
-// GET /api/v1/notifications/{userId}
+// List returns notifications for a user.
+// @Summary List notifications
+// @Description Get the most recent notifications for a user (up to 50)
+// @Tags notifications
+// @Produce json
+// @Param userId path int true "User ID"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} middleware.APIError
+// @Failure 500 {object} middleware.APIError
+// @Router /notifications/{userId} [get]
 func (h *NotificationHandler) List(w http.ResponseWriter, r *http.Request) {
 	userID, err := strconv.ParseInt(chi.URLParam(r, "userId"), 10, 64)
 	if err != nil {
@@ -59,7 +78,16 @@ func (h *NotificationHandler) List(w http.ResponseWriter, r *http.Request) {
 	middleware.JSON(w, http.StatusOK, map[string]any{"notifications": items, "total": len(items)})
 }
 
-// GET /api/v1/notifications/{userId}/preferences
+// GetPreferences returns notification preferences for a user.
+// @Summary Get notification preferences
+// @Description Get the notification channel and type preferences for a user
+// @Tags notifications
+// @Produce json
+// @Param userId path int true "User ID"
+// @Success 200 {object} models.NotificationPreferences
+// @Failure 400 {object} middleware.APIError
+// @Failure 500 {object} middleware.APIError
+// @Router /notifications/{userId}/preferences [get]
 func (h *NotificationHandler) GetPreferences(w http.ResponseWriter, r *http.Request) {
 	userID, err := strconv.ParseInt(chi.URLParam(r, "userId"), 10, 64)
 	if err != nil {
@@ -74,7 +102,18 @@ func (h *NotificationHandler) GetPreferences(w http.ResponseWriter, r *http.Requ
 	middleware.JSON(w, http.StatusOK, prefs)
 }
 
-// PUT /api/v1/notifications/{userId}/preferences
+// UpdatePreferences updates notification preferences for a user.
+// @Summary Update notification preferences
+// @Description Update the notification channel and type preferences for a user
+// @Tags notifications
+// @Accept json
+// @Produce json
+// @Param userId path int true "User ID"
+// @Param body body models.NotificationPreferences true "Preferences to update"
+// @Success 200 {object} models.NotificationPreferences
+// @Failure 400 {object} middleware.APIError
+// @Failure 500 {object} middleware.APIError
+// @Router /notifications/{userId}/preferences [put]
 func (h *NotificationHandler) UpdatePreferences(w http.ResponseWriter, r *http.Request) {
 	userID, err := strconv.ParseInt(chi.URLParam(r, "userId"), 10, 64)
 	if err != nil {

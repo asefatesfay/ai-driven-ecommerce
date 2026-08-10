@@ -1,0 +1,301 @@
+basePath: /api/v1
+definitions:
+  middleware.APIError:
+    properties:
+      code:
+        type: integer
+      message:
+        type: string
+    type: object
+  models.Address:
+    properties:
+      city:
+        type: string
+      country:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: integer
+      is_default:
+        type: boolean
+      label:
+        description: home|work|other
+        type: string
+      line1:
+        type: string
+      line2:
+        type: string
+      postal_code:
+        type: string
+      state:
+        type: string
+      user_id:
+        type: integer
+    type: object
+  models.AuthResponse:
+    properties:
+      access_token:
+        type: string
+      user:
+        $ref: '#/definitions/models.User'
+    type: object
+  models.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    type: object
+  models.RegisterRequest:
+    properties:
+      email:
+        type: string
+      first_name:
+        type: string
+      last_name:
+        type: string
+      password:
+        type: string
+    type: object
+  models.UpdateProfileRequest:
+    properties:
+      avatar_url:
+        type: string
+      first_name:
+        type: string
+      last_name:
+        type: string
+      phone_number:
+        type: string
+    type: object
+  models.User:
+    properties:
+      avatar_url:
+        type: string
+      created_at:
+        type: string
+      email:
+        type: string
+      first_name:
+        type: string
+      id:
+        type: integer
+      last_name:
+        type: string
+      phone_number:
+        type: string
+      role:
+        $ref: '#/definitions/models.UserRole'
+      updated_at:
+        type: string
+      verified:
+        type: boolean
+    type: object
+  models.UserRole:
+    enum:
+    - customer
+    - admin
+    type: string
+    x-enum-varnames:
+    - RoleCustomer
+    - RoleAdmin
+host: localhost:8085
+info:
+  contact: {}
+  description: User registration, authentication, and profile management
+  title: User Service API
+  version: "1.0"
+paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate with email and password, returns user and access token
+      parameters:
+      - description: Login credentials
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.AuthResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+      summary: Login user
+      tags:
+      - auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Register a new customer account with email and password
+      parameters:
+      - description: Registration details
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.User'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+      summary: Register user
+      tags:
+      - auth
+  /users/{id}:
+    get:
+      description: Get the profile of a user by their numeric ID
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.User'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+      summary: Get user profile
+      tags:
+      - users
+    put:
+      consumes:
+      - application/json
+      description: Update profile fields for an existing user
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Profile update
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateProfileRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.User'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+      summary: Update user profile
+      tags:
+      - users
+  /users/{id}/addresses:
+    get:
+      description: Get all saved shipping addresses for a user
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+      summary: List user addresses
+      tags:
+      - users
+    post:
+      consumes:
+      - application/json
+      description: Add a new shipping address for a user
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Address details
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.Address'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Address'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+      summary: Create user address
+      tags:
+      - users
+swagger: "2.0"

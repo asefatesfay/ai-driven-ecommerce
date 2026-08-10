@@ -1,3 +1,8 @@
+// @title Order Service API
+// @version 1.0
+// @description Order lifecycle management
+// @host localhost:8083
+// @BasePath /api/v1
 package main
 
 import (
@@ -11,9 +16,11 @@ import (
 	"github.com/go-chi/chi/v5"
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
+	httpSwagger "github.com/swaggo/http-swagger"
 
 	"github.com/ai-ecommerce/order/internal/db"
 	"github.com/ai-ecommerce/order/internal/handlers"
+	_ "github.com/ai-ecommerce/order/docs"
 )
 
 func main() {
@@ -51,6 +58,10 @@ func main() {
 		w.Header().Set("Content-Type", "application/json")
 		fmt.Fprintln(w, `{"status":"ok","service":"order"}`)
 	})
+
+	r.Get("/swagger/*", httpSwagger.Handler(
+		httpSwagger.URL("/swagger/doc.json"),
+	))
 
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Get("/orders", order.ListOrders)

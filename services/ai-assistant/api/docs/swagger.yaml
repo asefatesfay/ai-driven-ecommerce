@@ -1,0 +1,131 @@
+basePath: /api/v1
+definitions:
+  handlers.ChatRequest:
+    properties:
+      message:
+        type: string
+      session_id:
+        type: string
+    type: object
+  handlers.SearchRequest:
+    properties:
+      query:
+        type: string
+    type: object
+  middleware.APIError:
+    properties:
+      code:
+        type: integer
+      message:
+        type: string
+    type: object
+host: localhost:8088
+info:
+  contact: {}
+  description: AI chat assistant and semantic search proxy
+  title: AI Assistant API
+  version: "1.0"
+paths:
+  /assistant/chat:
+    post:
+      consumes:
+      - application/json
+      description: Send a chat message to the AI assistant; requires message and session_id
+        fields
+      parameters:
+      - description: Chat request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.ChatRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+      summary: Chat with AI assistant
+      tags:
+      - assistant
+  /assistant/index:
+    post:
+      consumes:
+      - application/json
+      description: Proxy request to the Python AI core service
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+      summary: Forward to AI core
+      tags:
+      - assistant
+  /assistant/search:
+    post:
+      consumes:
+      - application/json
+      description: Perform semantic search over the product catalog; requires query
+        field
+      parameters:
+      - description: Search request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.SearchRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+      summary: Semantic product search
+      tags:
+      - assistant
+  /health:
+    get:
+      description: Check the health of the AI assistant gateway and Python core
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+      summary: Health check
+      tags:
+      - assistant
+swagger: "2.0"

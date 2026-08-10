@@ -1,0 +1,283 @@
+basePath: /api/v1
+definitions:
+  middleware.APIError:
+    properties:
+      code:
+        type: integer
+      message:
+        type: string
+    type: object
+  models.Address:
+    properties:
+      city:
+        type: string
+      country:
+        type: string
+      line1:
+        type: string
+      line2:
+        type: string
+      postal_code:
+        type: string
+      state:
+        type: string
+    type: object
+  models.CreateOrderRequest:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/models.OrderItem'
+        type: array
+      payment_intent_id:
+        type: string
+      shipping_address:
+        $ref: '#/definitions/models.Address'
+      user_id:
+        type: integer
+    type: object
+  models.Order:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      items:
+        items:
+          $ref: '#/definitions/models.OrderItem'
+        type: array
+      notes:
+        type: string
+      payment_intent_id:
+        type: string
+      shipping_address:
+        $ref: '#/definitions/models.Address'
+      shipping_cost:
+        type: number
+      status:
+        $ref: '#/definitions/models.OrderStatus'
+      subtotal:
+        type: number
+      tax:
+        type: number
+      total:
+        type: number
+      tracking_number:
+        type: string
+      updated_at:
+        type: string
+      user_id:
+        type: integer
+    type: object
+  models.OrderItem:
+    properties:
+      brand:
+        type: string
+      color_name:
+        type: string
+      id:
+        type: integer
+      image_url:
+        type: string
+      name:
+        type: string
+      order_id:
+        type: integer
+      product_id:
+        type: integer
+      quantity:
+        type: integer
+      size:
+        type: string
+      style_id:
+        type: string
+      total:
+        type: number
+      unit_price:
+        type: number
+    type: object
+  models.OrderListResult:
+    properties:
+      orders:
+        items:
+          $ref: '#/definitions/models.Order'
+        type: array
+      page:
+        type: integer
+      page_size:
+        type: integer
+      total:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
+  models.OrderStatus:
+    enum:
+    - pending
+    - confirmed
+    - processing
+    - shipped
+    - delivered
+    - cancelled
+    - refunded
+    type: string
+    x-enum-varnames:
+    - OrderStatusPending
+    - OrderStatusConfirmed
+    - OrderStatusProcessing
+    - OrderStatusShipped
+    - OrderStatusDelivered
+    - OrderStatusCancelled
+    - OrderStatusRefunded
+  models.UpdateOrderStatusRequest:
+    properties:
+      notes:
+        type: string
+      status:
+        $ref: '#/definitions/models.OrderStatus'
+      tracking_number:
+        type: string
+    type: object
+host: localhost:8083
+info:
+  contact: {}
+  description: Order lifecycle management
+  title: Order Service API
+  version: "1.0"
+paths:
+  /orders:
+    get:
+      description: Get paginated orders for a user with optional status filter
+      parameters:
+      - description: User ID
+        in: query
+        name: user_id
+        required: true
+        type: integer
+      - description: Filter by order status
+        in: query
+        name: status
+        type: string
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.OrderListResult'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+      summary: List orders
+      tags:
+      - orders
+    post:
+      consumes:
+      - application/json
+      description: Create a new order for a user with line items and shipping address
+      parameters:
+      - description: Order creation request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateOrderRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Order'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+      summary: Create order
+      tags:
+      - orders
+  /orders/{id}:
+    get:
+      description: Get a single order by its numeric ID
+      parameters:
+      - description: Order ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Order'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+      summary: Get order
+      tags:
+      - orders
+  /orders/{id}/status:
+    put:
+      consumes:
+      - application/json
+      description: Update the status and optional tracking number for an order
+      parameters:
+      - description: Order ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Status update
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateOrderStatusRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Order'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+      summary: Update order status
+      tags:
+      - orders
+swagger: "2.0"

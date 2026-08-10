@@ -1,0 +1,233 @@
+basePath: /api/v1
+definitions:
+  middleware.APIError:
+    properties:
+      code:
+        type: integer
+      message:
+        type: string
+    type: object
+  models.Notification:
+    properties:
+      body:
+        type: string
+      channel:
+        $ref: '#/definitions/models.NotificationChannel'
+      created_at:
+        type: string
+      id:
+        type: integer
+      metadata:
+        description: JSON payload
+        type: string
+      sent_at:
+        type: string
+      status:
+        $ref: '#/definitions/models.NotificationStatus'
+      subject:
+        type: string
+      type:
+        $ref: '#/definitions/models.NotificationType'
+      user_id:
+        type: integer
+    type: object
+  models.NotificationChannel:
+    enum:
+    - email
+    - sms
+    - in_app
+    - push
+    type: string
+    x-enum-varnames:
+    - ChannelEmail
+    - ChannelSMS
+    - ChannelInApp
+    - ChannelPush
+  models.NotificationPreferences:
+    properties:
+      email_enabled:
+        type: boolean
+      order_updates:
+        type: boolean
+      price_alerts:
+        type: boolean
+      promotions:
+        type: boolean
+      push_enabled:
+        type: boolean
+      sms_enabled:
+        type: boolean
+      user_id:
+        type: integer
+    type: object
+  models.NotificationStatus:
+    enum:
+    - pending
+    - sent
+    - failed
+    - delivered
+    type: string
+    x-enum-varnames:
+    - StatusPending
+    - StatusSent
+    - StatusFailed
+    - StatusDelivered
+  models.NotificationType:
+    enum:
+    - order_confirmed
+    - order_shipped
+    - order_delivered
+    - order_cancelled
+    - price_alert
+    - back_in_stock
+    - welcome
+    - password_reset
+    type: string
+    x-enum-varnames:
+    - TypeOrderConfirmed
+    - TypeOrderShipped
+    - TypeOrderDelivered
+    - TypeOrderCancelled
+    - TypePriceAlert
+    - TypeBackInStock
+    - TypeWelcome
+    - TypePasswordReset
+  models.SendNotificationRequest:
+    properties:
+      channel:
+        $ref: '#/definitions/models.NotificationChannel'
+      metadata:
+        additionalProperties: {}
+        type: object
+      type:
+        $ref: '#/definitions/models.NotificationType'
+      user_id:
+        type: integer
+    type: object
+host: localhost:8086
+info:
+  contact: {}
+  description: Notification sending and preference management
+  title: Notification Service API
+  version: "1.0"
+paths:
+  /notifications/{userId}:
+    get:
+      description: Get the most recent notifications for a user (up to 50)
+      parameters:
+      - description: User ID
+        in: path
+        name: userId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+      summary: List notifications
+      tags:
+      - notifications
+  /notifications/{userId}/preferences:
+    get:
+      description: Get the notification channel and type preferences for a user
+      parameters:
+      - description: User ID
+        in: path
+        name: userId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.NotificationPreferences'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+      summary: Get notification preferences
+      tags:
+      - notifications
+    put:
+      consumes:
+      - application/json
+      description: Update the notification channel and type preferences for a user
+      parameters:
+      - description: User ID
+        in: path
+        name: userId
+        required: true
+        type: integer
+      - description: Preferences to update
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.NotificationPreferences'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.NotificationPreferences'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+      summary: Update notification preferences
+      tags:
+      - notifications
+  /notifications/send:
+    post:
+      consumes:
+      - application/json
+      description: Send a notification to a user via the specified channel
+      parameters:
+      - description: Notification request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.SendNotificationRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Notification'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+      summary: Send notification
+      tags:
+      - notifications
+swagger: "2.0"

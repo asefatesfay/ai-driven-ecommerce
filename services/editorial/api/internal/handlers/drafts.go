@@ -33,7 +33,18 @@ func NewDraftHandler(database *sql.DB, coreURL, catalogURL string) *DraftHandler
 	}
 }
 
-// GET /api/v1/drafts?status=&style_id=&page=&page_size=
+// ListDrafts returns a paginated list of editorial drafts.
+// @Summary List drafts
+// @Description Get paginated editorial copy drafts with optional status and style ID filters
+// @Tags drafts
+// @Produce json
+// @Param status query string false "Filter by draft status"
+// @Param style_id query string false "Filter by product style ID"
+// @Param page query int false "Page number" default(1)
+// @Param page_size query int false "Items per page" default(20)
+// @Success 200 {object} models.DraftListResult
+// @Failure 500 {object} middleware.APIError
+// @Router /drafts [get]
 func (h *DraftHandler) ListDrafts(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	page, _ := strconv.Atoi(q.Get("page"))
@@ -50,7 +61,17 @@ func (h *DraftHandler) ListDrafts(w http.ResponseWriter, r *http.Request) {
 	middleware.JSON(w, http.StatusOK, result)
 }
 
-// GET /api/v1/drafts/{id}
+// GetDraft returns an editorial draft by ID.
+// @Summary Get draft
+// @Description Get a single editorial draft by its numeric ID
+// @Tags drafts
+// @Produce json
+// @Param id path int true "Draft ID"
+// @Success 200 {object} models.Draft
+// @Failure 400 {object} middleware.APIError
+// @Failure 404 {object} middleware.APIError
+// @Failure 500 {object} middleware.APIError
+// @Router /drafts/{id} [get]
 func (h *DraftHandler) GetDraft(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 	if err != nil {
@@ -69,7 +90,17 @@ func (h *DraftHandler) GetDraft(w http.ResponseWriter, r *http.Request) {
 	middleware.JSON(w, http.StatusOK, draft)
 }
 
-// POST /api/v1/drafts/generate — calls Python core, saves all variants as drafts
+// Generate generates editorial copy variants using the AI core.
+// @Summary Generate editorial copy
+// @Description Call the AI core to generate copy variants for a product, then save as drafts
+// @Tags drafts
+// @Accept json
+// @Produce json
+// @Param body body models.GenerateRequest true "Generate request"
+// @Success 201 {object} map[string]interface{}
+// @Failure 400 {object} middleware.APIError
+// @Failure 500 {object} middleware.APIError
+// @Router /drafts/generate [post]
 func (h *DraftHandler) Generate(w http.ResponseWriter, r *http.Request) {
 	var req models.GenerateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -160,7 +191,18 @@ func (h *DraftHandler) Generate(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// PUT /api/v1/drafts/{id} — inline edit headline/body
+// UpdateDraft updates the headline and body of a draft.
+// @Summary Update draft
+// @Description Update the headline and body of an existing editorial draft
+// @Tags drafts
+// @Accept json
+// @Produce json
+// @Param id path int true "Draft ID"
+// @Param body body models.UpdateDraftRequest true "Updated content"
+// @Success 200 {object} models.Draft
+// @Failure 400 {object} middleware.APIError
+// @Failure 500 {object} middleware.APIError
+// @Router /drafts/{id} [put]
 func (h *DraftHandler) UpdateDraft(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 	if err != nil {
@@ -180,7 +222,18 @@ func (h *DraftHandler) UpdateDraft(w http.ResponseWriter, r *http.Request) {
 	middleware.JSON(w, http.StatusOK, draft)
 }
 
-// POST /api/v1/drafts/{id}/approve
+// ApproveDraft approves an editorial draft.
+// @Summary Approve draft
+// @Description Transition a draft to the approved state
+// @Tags drafts
+// @Accept json
+// @Produce json
+// @Param id path int true "Draft ID"
+// @Param body body models.TransitionRequest false "Reviewer information"
+// @Success 200 {object} models.Draft
+// @Failure 400 {object} middleware.APIError
+// @Failure 409 {object} middleware.APIError
+// @Router /drafts/{id}/approve [post]
 func (h *DraftHandler) ApproveDraft(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 	if err != nil {
@@ -198,7 +251,18 @@ func (h *DraftHandler) ApproveDraft(w http.ResponseWriter, r *http.Request) {
 	middleware.JSON(w, http.StatusOK, draft)
 }
 
-// POST /api/v1/drafts/{id}/publish — writes to catalog editorial table
+// PublishDraft publishes a draft and syncs it to the catalog service.
+// @Summary Publish draft
+// @Description Transition a draft to published and push the editorial copy to the catalog service
+// @Tags drafts
+// @Accept json
+// @Produce json
+// @Param id path int true "Draft ID"
+// @Param body body models.TransitionRequest false "Publisher information"
+// @Success 200 {object} models.Draft
+// @Failure 400 {object} middleware.APIError
+// @Failure 409 {object} middleware.APIError
+// @Router /drafts/{id}/publish [post]
 func (h *DraftHandler) PublishDraft(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 	if err != nil {
@@ -228,7 +292,16 @@ func (h *DraftHandler) PublishDraft(w http.ResponseWriter, r *http.Request) {
 	middleware.JSON(w, http.StatusOK, draft)
 }
 
-// POST /api/v1/drafts/{id}/archive
+// ArchiveDraft archives an editorial draft.
+// @Summary Archive draft
+// @Description Move a draft to the archived state
+// @Tags drafts
+// @Produce json
+// @Param id path int true "Draft ID"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} middleware.APIError
+// @Failure 500 {object} middleware.APIError
+// @Router /drafts/{id}/archive [post]
 func (h *DraftHandler) ArchiveDraft(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 	if err != nil {

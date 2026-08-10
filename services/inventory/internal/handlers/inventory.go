@@ -17,7 +17,16 @@ type InventoryHandler struct {
 	DB *sql.DB
 }
 
-// GET /api/inventory/{productId}
+// GetInventory returns inventory for a single product.
+// @Summary Get product inventory
+// @Description Get inventory variants for a product by its numeric product ID
+// @Tags inventory
+// @Produce json
+// @Param productId path int true "Product ID"
+// @Success 200 {object} models.ProductInventory
+// @Failure 400 {object} middleware.APIError
+// @Failure 500 {object} middleware.APIError
+// @Router /inventory/{productId} [get]
 func (h *InventoryHandler) GetInventory(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "productId")
 	id, err := strconv.ParseInt(idStr, 10, 64)
@@ -34,7 +43,16 @@ func (h *InventoryHandler) GetInventory(w http.ResponseWriter, r *http.Request) 
 	middleware.JSON(w, http.StatusOK, inv)
 }
 
-// GET /api/inventory?style_ids=ABC,DEF,GHI
+// BulkGetInventory returns inventory for multiple products by style IDs.
+// @Summary Bulk get inventory by style IDs
+// @Description Get inventory for multiple products using a comma-separated list of style IDs
+// @Tags inventory
+// @Produce json
+// @Param style_ids query string true "Comma-separated style IDs"
+// @Success 200 {object} map[string]models.ProductInventory
+// @Failure 400 {object} middleware.APIError
+// @Failure 500 {object} middleware.APIError
+// @Router /inventory [get]
 func (h *InventoryHandler) BulkGetInventory(w http.ResponseWriter, r *http.Request) {
 	raw := r.URL.Query().Get("style_ids")
 	if raw == "" {
@@ -54,7 +72,17 @@ func (h *InventoryHandler) BulkGetInventory(w http.ResponseWriter, r *http.Reque
 	middleware.JSON(w, http.StatusOK, result)
 }
 
-// POST /api/inventory/adjust
+// AdjustInventory adjusts the quantity of a product variant.
+// @Summary Adjust inventory
+// @Description Apply a delta (positive=restock, negative=sold/reserve) to a product variant
+// @Tags inventory
+// @Accept json
+// @Produce json
+// @Param body body models.InventoryAdjustment true "Inventory adjustment"
+// @Success 200 {object} models.ProductInventory
+// @Failure 400 {object} middleware.APIError
+// @Failure 500 {object} middleware.APIError
+// @Router /inventory/adjust [post]
 func (h *InventoryHandler) AdjustInventory(w http.ResponseWriter, r *http.Request) {
 	var adj models.InventoryAdjustment
 	if err := json.NewDecoder(r.Body).Decode(&adj); err != nil {
@@ -79,7 +107,14 @@ func (h *InventoryHandler) AdjustInventory(w http.ResponseWriter, r *http.Reques
 	middleware.JSON(w, http.StatusOK, inv)
 }
 
-// POST /api/inventory/sync — triggers the editorial active-flag sync
+// SyncInventory triggers the editorial active-flag inventory sync.
+// @Summary Sync inventory
+// @Description Trigger the editorial active-flag sync based on current stock levels
+// @Tags inventory
+// @Produce json
+// @Success 200 {object} map[string]interface{}
+// @Failure 500 {object} middleware.APIError
+// @Router /inventory/sync [post]
 func (h *InventoryHandler) SyncInventory(w http.ResponseWriter, r *http.Request) {
 	deactivated, reactivated, err := db.SyncInventory(h.DB)
 	if err != nil {

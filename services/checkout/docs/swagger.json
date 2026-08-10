@@ -1,0 +1,564 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "Cart and wishlist management",
+        "title": "Checkout Service API",
+        "contact": {},
+        "version": "1.0"
+    },
+    "host": "localhost:8084",
+    "basePath": "/api/v1",
+    "paths": {
+        "/cart": {
+            "get": {
+                "description": "Get or create a cart identified by user_id or session_id",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "cart"
+                ],
+                "summary": "Get cart",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "user_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Cart session ID",
+                        "name": "session_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Cart"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIError"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Remove all items from a cart identified by user_id or session_id",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "cart"
+                ],
+                "summary": "Clear cart",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "user_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Cart session ID",
+                        "name": "session_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIError"
+                        }
+                    }
+                }
+            }
+        },
+        "/cart/items": {
+            "post": {
+                "description": "Add a product variant to a cart identified by user_id or session_id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "cart"
+                ],
+                "summary": "Add item to cart",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "user_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Cart session ID",
+                        "name": "session_id",
+                        "in": "query"
+                    },
+                    {
+                        "description": "Item to add",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.AddToCartRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Cart"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIError"
+                        }
+                    }
+                }
+            }
+        },
+        "/cart/items/{itemId}": {
+            "put": {
+                "description": "Update the quantity of a specific item in the cart",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "cart"
+                ],
+                "summary": "Update cart item",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Cart Item ID",
+                        "name": "itemId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "user_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Cart session ID",
+                        "name": "session_id",
+                        "in": "query"
+                    },
+                    {
+                        "description": "Updated quantity",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.UpdateCartItemRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Cart"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIError"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Remove a specific item from the cart",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "cart"
+                ],
+                "summary": "Remove cart item",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Cart Item ID",
+                        "name": "itemId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "user_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Cart session ID",
+                        "name": "session_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Cart"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIError"
+                        }
+                    }
+                }
+            }
+        },
+        "/wishlist/{userId}": {
+            "get": {
+                "description": "Get all wishlist items for a user by their numeric user ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "wishlist"
+                ],
+                "summary": "Get wishlist",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "userId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIError"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Add a product to the specified user's wishlist",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "wishlist"
+                ],
+                "summary": "Add to wishlist",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "userId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Product to add",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.AddToWishlistRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIError"
+                        }
+                    }
+                }
+            }
+        },
+        "/wishlist/{userId}/{productId}": {
+            "delete": {
+                "description": "Remove a product from the specified user's wishlist",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "wishlist"
+                ],
+                "summary": "Remove from wishlist",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "userId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Product ID",
+                        "name": "productId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIError"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "middleware.APIError": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.AddToCartRequest": {
+            "type": "object",
+            "properties": {
+                "brand": {
+                    "type": "string"
+                },
+                "color_name": {
+                    "type": "string"
+                },
+                "image_url": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "product_id": {
+                    "type": "integer"
+                },
+                "quantity": {
+                    "type": "integer"
+                },
+                "size": {
+                    "type": "string"
+                },
+                "style_id": {
+                    "type": "string"
+                },
+                "unit_price": {
+                    "type": "number"
+                }
+            }
+        },
+        "models.AddToWishlistRequest": {
+            "type": "object",
+            "properties": {
+                "brand": {
+                    "type": "string"
+                },
+                "image_url": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "number"
+                },
+                "product_id": {
+                    "type": "integer"
+                },
+                "style_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.Cart": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "item_count": {
+                    "type": "integer"
+                },
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.CartItem"
+                    }
+                },
+                "session_id": {
+                    "type": "string"
+                },
+                "subtotal": {
+                    "type": "number"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "models.CartItem": {
+            "type": "object",
+            "properties": {
+                "added_at": {
+                    "type": "string"
+                },
+                "brand": {
+                    "type": "string"
+                },
+                "cart_id": {
+                    "type": "integer"
+                },
+                "color_name": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "image_url": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "product_id": {
+                    "type": "integer"
+                },
+                "quantity": {
+                    "type": "integer"
+                },
+                "size": {
+                    "type": "string"
+                },
+                "style_id": {
+                    "type": "string"
+                },
+                "unit_price": {
+                    "type": "number"
+                }
+            }
+        },
+        "models.UpdateCartItemRequest": {
+            "type": "object",
+            "properties": {
+                "quantity": {
+                    "type": "integer"
+                }
+            }
+        }
+    }
+}

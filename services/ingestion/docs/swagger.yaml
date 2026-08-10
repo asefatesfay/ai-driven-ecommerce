@@ -1,0 +1,227 @@
+basePath: /api/v1
+definitions:
+  middleware.APIError:
+    properties:
+      code:
+        type: integer
+      message:
+        type: string
+    type: object
+  models.IngestInventoryRequest:
+    properties:
+      inventory:
+        items:
+          $ref: '#/definitions/models.InventoryIngestionRecord'
+        type: array
+      source:
+        type: string
+    type: object
+  models.IngestProductsRequest:
+    properties:
+      products:
+        items:
+          $ref: '#/definitions/models.ProductIngestionRecord'
+        type: array
+      source:
+        type: string
+    type: object
+  models.InventoryIngestionRecord:
+    properties:
+      color_name:
+        type: string
+      quantity:
+        type: integer
+      size:
+        type: string
+      style_id:
+        type: string
+    type: object
+  models.PipelineJob:
+    properties:
+      completed_at:
+        type: string
+      created_at:
+        type: string
+      error_log:
+        type: string
+      failed:
+        type: integer
+      id:
+        type: integer
+      processed:
+        type: integer
+      source:
+        description: csv|api|webhook|manual
+        type: string
+      started_at:
+        type: string
+      status:
+        $ref: '#/definitions/models.PipelineJobStatus'
+      total_rows:
+        type: integer
+    type: object
+  models.PipelineJobStatus:
+    enum:
+    - queued
+    - running
+    - completed
+    - failed
+    type: string
+    x-enum-varnames:
+    - JobStatusQueued
+    - JobStatusRunning
+    - JobStatusCompleted
+    - JobStatusFailed
+  models.ProductIngestionRecord:
+    properties:
+      brand:
+        type: string
+      category:
+        type: string
+      colors:
+        items:
+          type: string
+        type: array
+      description:
+        type: string
+      image_url:
+        type: string
+      name:
+        type: string
+      price:
+        type: number
+      recipients:
+        items:
+          type: string
+        type: array
+      sale_price:
+        type: number
+      sizes:
+        items:
+          type: string
+        type: array
+      style_id:
+        type: string
+    type: object
+host: localhost:8087
+info:
+  contact: {}
+  description: Product and inventory data ingestion pipeline
+  title: Ingestion Service API
+  version: "1.0"
+paths:
+  /ingest/inventory:
+    post:
+      consumes:
+      - application/json
+      description: Ingest a batch of inventory records into the inventory pipeline
+      parameters:
+      - description: Inventory ingestion request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.IngestInventoryRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.PipelineJob'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+      summary: Ingest inventory
+      tags:
+      - ingestion
+  /ingest/jobs:
+    get:
+      description: Get recent ingestion pipeline jobs
+      parameters:
+      - description: Maximum number of jobs to return
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+      summary: List pipeline jobs
+      tags:
+      - ingestion
+  /ingest/jobs/{id}:
+    get:
+      description: Get details of a specific ingestion pipeline job by ID
+      parameters:
+      - description: Job ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.PipelineJob'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+      summary: Get pipeline job
+      tags:
+      - ingestion
+  /ingest/products:
+    post:
+      consumes:
+      - application/json
+      description: Ingest a batch of product records into the catalog pipeline
+      parameters:
+      - description: Products ingestion request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.IngestProductsRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.PipelineJob'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+      summary: Ingest products
+      tags:
+      - ingestion
+swagger: "2.0"

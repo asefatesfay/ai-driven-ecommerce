@@ -1,3 +1,8 @@
+// @title Catalog Service API
+// @version 1.0
+// @description Product catalog management
+// @host localhost:8081
+// @BasePath /api/v1
 package main
 
 import (
@@ -12,10 +17,12 @@ import (
 	"github.com/go-chi/cors"
 
 	"github.com/go-chi/chi/v5"
+	httpSwagger "github.com/swaggo/http-swagger"
 
 	"github.com/ai-ecommerce/catalog/internal/db"
 	"github.com/ai-ecommerce/catalog/internal/handlers"
 	"github.com/ai-ecommerce/catalog/seed"
+	_ "github.com/ai-ecommerce/catalog/docs"
 )
 
 func main() {
@@ -65,6 +72,10 @@ func main() {
 		w.Header().Set("Content-Type", "application/json")
 		fmt.Fprintln(w, `{"status":"ok","service":"catalog"}`)
 	})
+
+	r.Get("/swagger/*", httpSwagger.Handler(
+		httpSwagger.URL("/swagger/doc.json"),
+	))
 
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Get("/products", catalog.ListProducts)

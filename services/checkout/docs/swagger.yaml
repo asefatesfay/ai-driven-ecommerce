@@ -1,0 +1,372 @@
+basePath: /api/v1
+definitions:
+  middleware.APIError:
+    properties:
+      code:
+        type: integer
+      message:
+        type: string
+    type: object
+  models.AddToCartRequest:
+    properties:
+      brand:
+        type: string
+      color_name:
+        type: string
+      image_url:
+        type: string
+      name:
+        type: string
+      product_id:
+        type: integer
+      quantity:
+        type: integer
+      size:
+        type: string
+      style_id:
+        type: string
+      unit_price:
+        type: number
+    type: object
+  models.AddToWishlistRequest:
+    properties:
+      brand:
+        type: string
+      image_url:
+        type: string
+      name:
+        type: string
+      price:
+        type: number
+      product_id:
+        type: integer
+      style_id:
+        type: string
+    type: object
+  models.Cart:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      item_count:
+        type: integer
+      items:
+        items:
+          $ref: '#/definitions/models.CartItem'
+        type: array
+      session_id:
+        type: string
+      subtotal:
+        type: number
+      updated_at:
+        type: string
+      user_id:
+        type: integer
+    type: object
+  models.CartItem:
+    properties:
+      added_at:
+        type: string
+      brand:
+        type: string
+      cart_id:
+        type: integer
+      color_name:
+        type: string
+      id:
+        type: integer
+      image_url:
+        type: string
+      name:
+        type: string
+      product_id:
+        type: integer
+      quantity:
+        type: integer
+      size:
+        type: string
+      style_id:
+        type: string
+      unit_price:
+        type: number
+    type: object
+  models.UpdateCartItemRequest:
+    properties:
+      quantity:
+        type: integer
+    type: object
+host: localhost:8084
+info:
+  contact: {}
+  description: Cart and wishlist management
+  title: Checkout Service API
+  version: "1.0"
+paths:
+  /cart:
+    delete:
+      description: Remove all items from a cart identified by user_id or session_id
+      parameters:
+      - description: User ID
+        in: query
+        name: user_id
+        type: integer
+      - description: Cart session ID
+        in: query
+        name: session_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+      summary: Clear cart
+      tags:
+      - cart
+    get:
+      description: Get or create a cart identified by user_id or session_id
+      parameters:
+      - description: User ID
+        in: query
+        name: user_id
+        type: integer
+      - description: Cart session ID
+        in: query
+        name: session_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Cart'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+      summary: Get cart
+      tags:
+      - cart
+  /cart/items:
+    post:
+      consumes:
+      - application/json
+      description: Add a product variant to a cart identified by user_id or session_id
+      parameters:
+      - description: User ID
+        in: query
+        name: user_id
+        type: integer
+      - description: Cart session ID
+        in: query
+        name: session_id
+        type: string
+      - description: Item to add
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.AddToCartRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Cart'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+      summary: Add item to cart
+      tags:
+      - cart
+  /cart/items/{itemId}:
+    delete:
+      description: Remove a specific item from the cart
+      parameters:
+      - description: Cart Item ID
+        in: path
+        name: itemId
+        required: true
+        type: integer
+      - description: User ID
+        in: query
+        name: user_id
+        type: integer
+      - description: Cart session ID
+        in: query
+        name: session_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Cart'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+      summary: Remove cart item
+      tags:
+      - cart
+    put:
+      consumes:
+      - application/json
+      description: Update the quantity of a specific item in the cart
+      parameters:
+      - description: Cart Item ID
+        in: path
+        name: itemId
+        required: true
+        type: integer
+      - description: User ID
+        in: query
+        name: user_id
+        type: integer
+      - description: Cart session ID
+        in: query
+        name: session_id
+        type: string
+      - description: Updated quantity
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateCartItemRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Cart'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+      summary: Update cart item
+      tags:
+      - cart
+  /wishlist/{userId}:
+    get:
+      description: Get all wishlist items for a user by their numeric user ID
+      parameters:
+      - description: User ID
+        in: path
+        name: userId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+      summary: Get wishlist
+      tags:
+      - wishlist
+    post:
+      consumes:
+      - application/json
+      description: Add a product to the specified user's wishlist
+      parameters:
+      - description: User ID
+        in: path
+        name: userId
+        required: true
+        type: integer
+      - description: Product to add
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.AddToWishlistRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+      summary: Add to wishlist
+      tags:
+      - wishlist
+  /wishlist/{userId}/{productId}:
+    delete:
+      description: Remove a product from the specified user's wishlist
+      parameters:
+      - description: User ID
+        in: path
+        name: userId
+        required: true
+        type: integer
+      - description: Product ID
+        in: path
+        name: productId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+      summary: Remove from wishlist
+      tags:
+      - wishlist
+swagger: "2.0"

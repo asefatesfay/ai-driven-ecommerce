@@ -1,0 +1,367 @@
+basePath: /api/v1
+definitions:
+  middleware.APIError:
+    properties:
+      code:
+        type: integer
+      message:
+        type: string
+    type: object
+  models.Attribution:
+    enum:
+    - fashion-office
+    - buyer
+    - stylist
+    - customer-loved
+    type: string
+    x-enum-varnames:
+    - AttrFashionOffice
+    - AttrBuyer
+    - AttrStylist
+    - AttrCustomerLoved
+  models.Draft:
+    properties:
+      attribution:
+        $ref: '#/definitions/models.Attribution'
+      body:
+        type: string
+      brand:
+        type: string
+      created_at:
+        type: string
+      generated_by:
+        description: '"ai" | "human"'
+        type: string
+      headline:
+        type: string
+      id:
+        type: integer
+      price_range:
+        type: string
+      product_name:
+        type: string
+      published_at:
+        type: string
+      published_by:
+        type: string
+      reviewed_by:
+        type: string
+      status:
+        $ref: '#/definitions/models.DraftStatus'
+      style_id:
+        type: string
+      themes:
+        items:
+          type: string
+        type: array
+      tone_notes:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  models.DraftListResult:
+    properties:
+      drafts:
+        items:
+          $ref: '#/definitions/models.Draft'
+        type: array
+      page:
+        type: integer
+      page_size:
+        type: integer
+      total:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
+  models.DraftStatus:
+    enum:
+    - draft
+    - approved
+    - published
+    - archived
+    type: string
+    x-enum-varnames:
+    - StatusDraft
+    - StatusApproved
+    - StatusPublished
+    - StatusArchived
+  models.GenerateRequest:
+    properties:
+      attribution:
+        $ref: '#/definitions/models.Attribution'
+      feedback:
+        type: string
+      max_words:
+        type: integer
+      num_variants:
+        type: integer
+      previous_body:
+        type: string
+      previous_headline:
+        type: string
+      price_range:
+        type: string
+      style_id:
+        type: string
+      themes:
+        items:
+          type: string
+        type: array
+    type: object
+  models.TransitionRequest:
+    properties:
+      note:
+        type: string
+      published_by:
+        type: string
+      reviewed_by:
+        type: string
+    type: object
+  models.UpdateDraftRequest:
+    properties:
+      body:
+        type: string
+      headline:
+        type: string
+    type: object
+host: localhost:8089
+info:
+  contact: {}
+  description: AI-driven editorial copy generation and draft management
+  title: Editorial Service API
+  version: "1.0"
+paths:
+  /drafts:
+    get:
+      description: Get paginated editorial copy drafts with optional status and style
+        ID filters
+      parameters:
+      - description: Filter by draft status
+        in: query
+        name: status
+        type: string
+      - description: Filter by product style ID
+        in: query
+        name: style_id
+        type: string
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.DraftListResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+      summary: List drafts
+      tags:
+      - drafts
+  /drafts/{id}:
+    get:
+      description: Get a single editorial draft by its numeric ID
+      parameters:
+      - description: Draft ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Draft'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+      summary: Get draft
+      tags:
+      - drafts
+    put:
+      consumes:
+      - application/json
+      description: Update the headline and body of an existing editorial draft
+      parameters:
+      - description: Draft ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Updated content
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateDraftRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Draft'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+      summary: Update draft
+      tags:
+      - drafts
+  /drafts/{id}/approve:
+    post:
+      consumes:
+      - application/json
+      description: Transition a draft to the approved state
+      parameters:
+      - description: Draft ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Reviewer information
+        in: body
+        name: body
+        schema:
+          $ref: '#/definitions/models.TransitionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Draft'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+      summary: Approve draft
+      tags:
+      - drafts
+  /drafts/{id}/archive:
+    post:
+      description: Move a draft to the archived state
+      parameters:
+      - description: Draft ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+      summary: Archive draft
+      tags:
+      - drafts
+  /drafts/{id}/publish:
+    post:
+      consumes:
+      - application/json
+      description: Transition a draft to published and push the editorial copy to
+        the catalog service
+      parameters:
+      - description: Draft ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Publisher information
+        in: body
+        name: body
+        schema:
+          $ref: '#/definitions/models.TransitionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Draft'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+      summary: Publish draft
+      tags:
+      - drafts
+  /drafts/generate:
+    post:
+      consumes:
+      - application/json
+      description: Call the AI core to generate copy variants for a product, then
+        save as drafts
+      parameters:
+      - description: Generate request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.GenerateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+      summary: Generate editorial copy
+      tags:
+      - drafts
+swagger: "2.0"

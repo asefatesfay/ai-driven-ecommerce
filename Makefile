@@ -2,10 +2,23 @@ GO_SERVICES   := catalog inventory order checkout user notification ingestion pa
 AI_API        := services/ai-assistant/api
 EDITORIAL_API := services/editorial/api
 GATEWAY       := gateway
+SWAG          := $(HOME)/go/bin/swag
 
 AWS_PROFILE   ?=
 
 .PHONY: tidy build dev-go dev-ai dev-web health chroma-up help
+
+## regenerate swagger docs for all services (run after changing annotations)
+swag:
+	@for svc in $(GO_SERVICES); do \
+		echo "→ swag services/$$svc"; \
+		(cd services/$$svc && $(SWAG) init -g cmd/server/main.go -o docs --quiet); \
+	done
+	@echo "→ swag $(AI_API)"
+	@(cd $(AI_API) && $(SWAG) init -g cmd/server/main.go -o docs --quiet)
+	@echo "→ swag $(EDITORIAL_API)"
+	@(cd $(EDITORIAL_API) && $(SWAG) init -g cmd/server/main.go -o docs --quiet)
+	@echo "Unified UI available at http://localhost:8080/swagger once gateway is running"
 
 ## go mod tidy for all Go modules
 tidy:
@@ -107,6 +120,7 @@ health:
 
 help:
 	@echo "Targets:"
+	@echo "  swag          — regenerate swagger docs for all services"
 	@echo "  tidy          — go mod tidy all modules"
 	@echo "  build         — build all Go binaries"
 	@echo "  chroma-up     — start ChromaDB in Docker"

@@ -20,7 +20,17 @@ type IngestionHandler struct {
 	InventoryBaseURL string
 }
 
-// POST /api/v1/ingest/products
+// IngestProducts ingests a batch of product records.
+// @Summary Ingest products
+// @Description Ingest a batch of product records into the catalog pipeline
+// @Tags ingestion
+// @Accept json
+// @Produce json
+// @Param body body models.IngestProductsRequest true "Products ingestion request"
+// @Success 201 {object} models.PipelineJob
+// @Failure 400 {object} middleware.APIError
+// @Failure 500 {object} middleware.APIError
+// @Router /ingest/products [post]
 func (h *IngestionHandler) IngestProducts(w http.ResponseWriter, r *http.Request) {
 	var req models.IngestProductsRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -67,7 +77,17 @@ func (h *IngestionHandler) IngestProducts(w http.ResponseWriter, r *http.Request
 	middleware.JSON(w, http.StatusCreated, job)
 }
 
-// POST /api/v1/ingest/inventory
+// IngestInventory ingests a batch of inventory records.
+// @Summary Ingest inventory
+// @Description Ingest a batch of inventory records into the inventory pipeline
+// @Tags ingestion
+// @Accept json
+// @Produce json
+// @Param body body models.IngestInventoryRequest true "Inventory ingestion request"
+// @Success 201 {object} models.PipelineJob
+// @Failure 400 {object} middleware.APIError
+// @Failure 500 {object} middleware.APIError
+// @Router /ingest/inventory [post]
 func (h *IngestionHandler) IngestInventory(w http.ResponseWriter, r *http.Request) {
 	var req models.IngestInventoryRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -98,7 +118,15 @@ func (h *IngestionHandler) IngestInventory(w http.ResponseWriter, r *http.Reques
 	middleware.JSON(w, http.StatusCreated, job)
 }
 
-// GET /api/v1/ingest/jobs
+// ListJobs returns recent pipeline jobs.
+// @Summary List pipeline jobs
+// @Description Get recent ingestion pipeline jobs
+// @Tags ingestion
+// @Produce json
+// @Param limit query int false "Maximum number of jobs to return"
+// @Success 200 {object} map[string]interface{}
+// @Failure 500 {object} middleware.APIError
+// @Router /ingest/jobs [get]
 func (h *IngestionHandler) ListJobs(w http.ResponseWriter, r *http.Request) {
 	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
 	jobs, err := db.ListJobs(h.DB, limit)
@@ -112,7 +140,17 @@ func (h *IngestionHandler) ListJobs(w http.ResponseWriter, r *http.Request) {
 	middleware.JSON(w, http.StatusOK, map[string]any{"jobs": jobs, "total": len(jobs)})
 }
 
-// GET /api/v1/ingest/jobs/{id}
+// GetJob returns a pipeline job by ID.
+// @Summary Get pipeline job
+// @Description Get details of a specific ingestion pipeline job by ID
+// @Tags ingestion
+// @Produce json
+// @Param id path int true "Job ID"
+// @Success 200 {object} models.PipelineJob
+// @Failure 400 {object} middleware.APIError
+// @Failure 404 {object} middleware.APIError
+// @Failure 500 {object} middleware.APIError
+// @Router /ingest/jobs/{id} [get]
 func (h *IngestionHandler) GetJob(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 	if err != nil {

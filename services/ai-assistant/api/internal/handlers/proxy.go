@@ -55,11 +55,26 @@ func NewProxyHandler(coreURL string) *ProxyHandler {
 }
 
 // Forward proxies the request to the Python core unchanged.
+// @Summary Forward to AI core
+// @Description Proxy request to the Python AI core service
+// @Tags assistant
+// @Accept json
+// @Produce json
+// @Success 200 {object} map[string]interface{}
+// @Failure 503 {object} middleware.APIError
+// @Router /assistant/index [post]
 func (h *ProxyHandler) Forward(w http.ResponseWriter, r *http.Request) {
 	h.proxy.ServeHTTP(w, r)
 }
 
 // Health checks the Python core's /health endpoint and returns combined status.
+// @Summary Health check
+// @Description Check the health of the AI assistant gateway and Python core
+// @Tags assistant
+// @Produce json
+// @Success 200 {object} map[string]interface{}
+// @Failure 503 {object} middleware.APIError
+// @Router /health [get]
 func (h *ProxyHandler) Health(w http.ResponseWriter, r *http.Request) {
 	resp, err := h.client.Get(h.CoreURL + "/health")
 	if err != nil {
@@ -79,6 +94,16 @@ func (h *ProxyHandler) Health(w http.ResponseWriter, r *http.Request) {
 }
 
 // ValidateChat validates the incoming chat request before forwarding.
+// @Summary Chat with AI assistant
+// @Description Send a chat message to the AI assistant; requires message and session_id fields
+// @Tags assistant
+// @Accept json
+// @Produce json
+// @Param body body handlers.ChatRequest true "Chat request"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} middleware.APIError
+// @Failure 503 {object} middleware.APIError
+// @Router /assistant/chat [post]
 func (h *ProxyHandler) ValidateChat(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, err := io.ReadAll(r.Body)
@@ -106,6 +131,16 @@ func (h *ProxyHandler) ValidateChat(next http.Handler) http.Handler {
 }
 
 // ValidateSearch validates the incoming search request before forwarding.
+// @Summary Semantic product search
+// @Description Perform semantic search over the product catalog; requires query field
+// @Tags assistant
+// @Accept json
+// @Produce json
+// @Param body body handlers.SearchRequest true "Search request"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} middleware.APIError
+// @Failure 503 {object} middleware.APIError
+// @Router /assistant/search [post]
 func (h *ProxyHandler) ValidateSearch(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, err := io.ReadAll(r.Body)
@@ -126,4 +161,15 @@ func (h *ProxyHandler) ValidateSearch(next http.Handler) http.Handler {
 		}
 		next.ServeHTTP(w, r)
 	})
+}
+
+// ChatRequest is the body for the /assistant/chat endpoint.
+type ChatRequest struct {
+	Message   string `json:"message"`
+	SessionID string `json:"session_id"`
+}
+
+// SearchRequest is the body for the /assistant/search endpoint.
+type SearchRequest struct {
+	Query string `json:"query"`
 }

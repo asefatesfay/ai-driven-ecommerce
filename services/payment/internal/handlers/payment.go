@@ -17,7 +17,17 @@ type PaymentHandler struct {
 	DB *sql.DB
 }
 
-// POST /api/v1/payments/authorise
+// Authorise authorises a payment for a cart session.
+// @Summary Authorise payment
+// @Description Authorise a card payment for a checkout session
+// @Tags payments
+// @Accept json
+// @Produce json
+// @Param body body models.AuthoriseRequest true "Authorisation request"
+// @Success 200 {object} models.AuthoriseResponse
+// @Failure 400 {object} middleware.APIError
+// @Failure 500 {object} middleware.APIError
+// @Router /payments/authorise [post]
 func (h *PaymentHandler) Authorise(w http.ResponseWriter, r *http.Request) {
 	var req models.AuthoriseRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -63,7 +73,17 @@ func (h *PaymentHandler) Authorise(w http.ResponseWriter, r *http.Request) {
 	middleware.JSON(w, http.StatusOK, resp)
 }
 
-// GET /api/v1/payments/{id}
+// GetPayment returns a payment by ID.
+// @Summary Get payment
+// @Description Get a single payment by its numeric ID
+// @Tags payments
+// @Produce json
+// @Param id path int true "Payment ID"
+// @Success 200 {object} models.Payment
+// @Failure 400 {object} middleware.APIError
+// @Failure 404 {object} middleware.APIError
+// @Failure 500 {object} middleware.APIError
+// @Router /payments/{id} [get]
 func (h *PaymentHandler) GetPayment(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 	if err != nil {
@@ -82,7 +102,16 @@ func (h *PaymentHandler) GetPayment(w http.ResponseWriter, r *http.Request) {
 	middleware.JSON(w, http.StatusOK, payment)
 }
 
-// GET /api/v1/payments?session_id=
+// ListPayments returns all payments for a session.
+// @Summary List payments by session
+// @Description List all payments associated with a checkout session
+// @Tags payments
+// @Produce json
+// @Param session_id query string true "Cart session ID"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} middleware.APIError
+// @Failure 500 {object} middleware.APIError
+// @Router /payments [get]
 func (h *PaymentHandler) ListPayments(w http.ResponseWriter, r *http.Request) {
 	sessionID := r.URL.Query().Get("session_id")
 	if sessionID == "" {

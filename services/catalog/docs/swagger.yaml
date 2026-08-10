@@ -1,0 +1,355 @@
+basePath: /api/v1
+definitions:
+  middleware.APIError:
+    properties:
+      code:
+        type: integer
+      message:
+        type: string
+    type: object
+  models.Color:
+    properties:
+      hex:
+        type: string
+      name:
+        type: string
+    type: object
+  models.Product:
+    properties:
+      active:
+        type: boolean
+      badge:
+        type: string
+      badge_type:
+        type: string
+      brand:
+        type: string
+      category:
+        description: beauty|apparel|home|shoes|accessories|tech|wellness|toys
+        type: string
+      colors:
+        items:
+          $ref: '#/definitions/models.Color'
+        type: array
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      image_url:
+        type: string
+      name:
+        type: string
+      price:
+        type: number
+      rating:
+        type: number
+      recipients:
+        description: her|him|kids|teens|pets
+        items:
+          type: string
+        type: array
+      review_count:
+        type: integer
+      sale_price:
+        type: number
+      sizes:
+        items:
+          type: string
+        type: array
+      style_id:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  models.ProductListResult:
+    properties:
+      page:
+        type: integer
+      page_size:
+        type: integer
+      products:
+        items:
+          $ref: '#/definitions/models.Product'
+        type: array
+      total:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
+  models.UpsertEditorialRequest:
+    properties:
+      active:
+        type: boolean
+      attribution:
+        type: string
+      editorial_copy:
+        type: string
+      editorial_headline:
+        type: string
+      filter_price:
+        type: string
+      filter_recipient:
+        items:
+          type: string
+        type: array
+      filter_theme:
+        items:
+          type: string
+        type: array
+    type: object
+host: localhost:8081
+info:
+  contact: {}
+  description: Product catalog management
+  title: Catalog Service API
+  version: "1.0"
+paths:
+  /editorial:
+    get:
+      description: Get editorial (gift-edit) products with optional recipient/theme/price
+        filters
+      parameters:
+      - description: Filter by recipient
+        in: query
+        name: recipient
+        type: string
+      - description: Filter by theme
+        in: query
+        name: theme
+        type: string
+      - description: Filter by price range
+        in: query
+        name: price
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+      summary: List editorial products
+      tags:
+      - editorial
+  /editorial/products/{styleId}:
+    put:
+      consumes:
+      - application/json
+      description: Create or update editorial copy for a product style
+      parameters:
+      - description: Style ID
+        in: path
+        name: styleId
+        required: true
+        type: string
+      - description: Editorial data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpsertEditorialRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+      summary: Upsert editorial product
+      tags:
+      - editorial
+  /products:
+    get:
+      description: Get paginated products with optional filters
+      parameters:
+      - description: Filter by category
+        in: query
+        name: category
+        type: string
+      - description: Filter by recipient
+        in: query
+        name: recipient
+        type: string
+      - description: Search by name or brand
+        in: query
+        name: search
+        type: string
+      - description: 'Sort order: price_asc|price_desc|rating|newest'
+        in: query
+        name: sort
+        type: string
+      - description: Minimum price filter
+        in: query
+        name: min_price
+        type: number
+      - description: Maximum price filter
+        in: query
+        name: max_price
+        type: number
+      - description: Filter to sale items only
+        in: query
+        name: on_sale
+        type: boolean
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 8
+        description: Items per page
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ProductListResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+      summary: List products
+      tags:
+      - products
+    post:
+      consumes:
+      - application/json
+      description: Create a new product in the catalog
+      parameters:
+      - description: Product to create
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.Product'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Product'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+      summary: Create product
+      tags:
+      - products
+  /products/{id}:
+    get:
+      description: Get a single product by its numeric ID
+      parameters:
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Product'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+      summary: Get product
+      tags:
+      - products
+    put:
+      consumes:
+      - application/json
+      description: Update fields of an existing product by ID
+      parameters:
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Updated product fields
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.Product'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Product'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+      summary: Update product
+      tags:
+      - products
+  /products/style/{styleId}:
+    get:
+      description: Get a single product by its style ID string
+      parameters:
+      - description: Style ID
+        in: path
+        name: styleId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Product'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/middleware.APIError'
+      summary: Get product by style ID
+      tags:
+      - products
+swagger: "2.0"

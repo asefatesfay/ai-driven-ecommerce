@@ -17,7 +17,16 @@ type WishlistHandler struct {
 	DB *sql.DB
 }
 
-// GET /api/v1/wishlist/{userId}
+// GetWishlist returns all wishlist items for a user.
+// @Summary Get wishlist
+// @Description Get all wishlist items for a user by their numeric user ID
+// @Tags wishlist
+// @Produce json
+// @Param userId path int true "User ID"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} middleware.APIError
+// @Failure 500 {object} middleware.APIError
+// @Router /wishlist/{userId} [get]
 func (h *WishlistHandler) GetWishlist(w http.ResponseWriter, r *http.Request) {
 	userID, err := strconv.ParseInt(chi.URLParam(r, "userId"), 10, 64)
 	if err != nil {
@@ -35,7 +44,18 @@ func (h *WishlistHandler) GetWishlist(w http.ResponseWriter, r *http.Request) {
 	middleware.JSON(w, http.StatusOK, map[string]any{"items": items, "total": len(items)})
 }
 
-// POST /api/v1/wishlist/{userId}
+// AddToWishlist adds a product to a user's wishlist.
+// @Summary Add to wishlist
+// @Description Add a product to the specified user's wishlist
+// @Tags wishlist
+// @Accept json
+// @Produce json
+// @Param userId path int true "User ID"
+// @Param body body models.AddToWishlistRequest true "Product to add"
+// @Success 201 {object} map[string]string
+// @Failure 400 {object} middleware.APIError
+// @Failure 500 {object} middleware.APIError
+// @Router /wishlist/{userId} [post]
 func (h *WishlistHandler) AddToWishlist(w http.ResponseWriter, r *http.Request) {
 	userID, err := strconv.ParseInt(chi.URLParam(r, "userId"), 10, 64)
 	if err != nil {
@@ -58,7 +78,16 @@ func (h *WishlistHandler) AddToWishlist(w http.ResponseWriter, r *http.Request) 
 	middleware.JSON(w, http.StatusCreated, map[string]string{"status": "added"})
 }
 
-// DELETE /api/v1/wishlist/{userId}/{productId}
+// RemoveFromWishlist removes a product from a user's wishlist.
+// @Summary Remove from wishlist
+// @Description Remove a product from the specified user's wishlist
+// @Tags wishlist
+// @Produce json
+// @Param userId path int true "User ID"
+// @Param productId path int true "Product ID"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} middleware.APIError
+// @Router /wishlist/{userId}/{productId} [delete]
 func (h *WishlistHandler) RemoveFromWishlist(w http.ResponseWriter, r *http.Request) {
 	userID, err := strconv.ParseInt(chi.URLParam(r, "userId"), 10, 64)
 	if err != nil {

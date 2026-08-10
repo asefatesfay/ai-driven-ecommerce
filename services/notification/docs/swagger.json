@@ -1,0 +1,339 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "Notification sending and preference management",
+        "title": "Notification Service API",
+        "contact": {},
+        "version": "1.0"
+    },
+    "host": "localhost:8086",
+    "basePath": "/api/v1",
+    "paths": {
+        "/notifications/send": {
+            "post": {
+                "description": "Send a notification to a user via the specified channel",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "notifications"
+                ],
+                "summary": "Send notification",
+                "parameters": [
+                    {
+                        "description": "Notification request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.SendNotificationRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/models.Notification"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIError"
+                        }
+                    }
+                }
+            }
+        },
+        "/notifications/{userId}": {
+            "get": {
+                "description": "Get the most recent notifications for a user (up to 50)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "notifications"
+                ],
+                "summary": "List notifications",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "userId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIError"
+                        }
+                    }
+                }
+            }
+        },
+        "/notifications/{userId}/preferences": {
+            "get": {
+                "description": "Get the notification channel and type preferences for a user",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "notifications"
+                ],
+                "summary": "Get notification preferences",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "userId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.NotificationPreferences"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIError"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Update the notification channel and type preferences for a user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "notifications"
+                ],
+                "summary": "Update notification preferences",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "userId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Preferences to update",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.NotificationPreferences"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.NotificationPreferences"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIError"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "middleware.APIError": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.Notification": {
+            "type": "object",
+            "properties": {
+                "body": {
+                    "type": "string"
+                },
+                "channel": {
+                    "$ref": "#/definitions/models.NotificationChannel"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "metadata": {
+                    "description": "JSON payload",
+                    "type": "string"
+                },
+                "sent_at": {
+                    "type": "string"
+                },
+                "status": {
+                    "$ref": "#/definitions/models.NotificationStatus"
+                },
+                "subject": {
+                    "type": "string"
+                },
+                "type": {
+                    "$ref": "#/definitions/models.NotificationType"
+                },
+                "user_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "models.NotificationChannel": {
+            "type": "string",
+            "enum": [
+                "email",
+                "sms",
+                "in_app",
+                "push"
+            ],
+            "x-enum-varnames": [
+                "ChannelEmail",
+                "ChannelSMS",
+                "ChannelInApp",
+                "ChannelPush"
+            ]
+        },
+        "models.NotificationPreferences": {
+            "type": "object",
+            "properties": {
+                "email_enabled": {
+                    "type": "boolean"
+                },
+                "order_updates": {
+                    "type": "boolean"
+                },
+                "price_alerts": {
+                    "type": "boolean"
+                },
+                "promotions": {
+                    "type": "boolean"
+                },
+                "push_enabled": {
+                    "type": "boolean"
+                },
+                "sms_enabled": {
+                    "type": "boolean"
+                },
+                "user_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "models.NotificationStatus": {
+            "type": "string",
+            "enum": [
+                "pending",
+                "sent",
+                "failed",
+                "delivered"
+            ],
+            "x-enum-varnames": [
+                "StatusPending",
+                "StatusSent",
+                "StatusFailed",
+                "StatusDelivered"
+            ]
+        },
+        "models.NotificationType": {
+            "type": "string",
+            "enum": [
+                "order_confirmed",
+                "order_shipped",
+                "order_delivered",
+                "order_cancelled",
+                "price_alert",
+                "back_in_stock",
+                "welcome",
+                "password_reset"
+            ],
+            "x-enum-varnames": [
+                "TypeOrderConfirmed",
+                "TypeOrderShipped",
+                "TypeOrderDelivered",
+                "TypeOrderCancelled",
+                "TypePriceAlert",
+                "TypeBackInStock",
+                "TypeWelcome",
+                "TypePasswordReset"
+            ]
+        },
+        "models.SendNotificationRequest": {
+            "type": "object",
+            "properties": {
+                "channel": {
+                    "$ref": "#/definitions/models.NotificationChannel"
+                },
+                "metadata": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "type": {
+                    "$ref": "#/definitions/models.NotificationType"
+                },
+                "user_id": {
+                    "type": "integer"
+                }
+            }
+        }
+    }
+}
