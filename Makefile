@@ -1,4 +1,4 @@
-GO_SERVICES   := catalog inventory order checkout user notification ingestion
+GO_SERVICES   := catalog inventory order checkout user notification ingestion payment
 AI_API        := services/ai-assistant/api
 EDITORIAL_API := services/editorial/api
 GATEWAY       := gateway
@@ -64,6 +64,7 @@ dev-go:
 	 (cd services/ingestion  && PORT=8087 go run ./cmd/server) & \
 	 (cd $(AI_API)           && AI_CORE_URL=http://localhost:19010 PORT=8088 go run ./cmd/server) & \
 	 (cd $(EDITORIAL_API)   && EDITORIAL_CORE_URL=http://localhost:9100 CATALOG_URL=http://localhost:8081 PORT=8089 go run ./cmd/server) & \
+	 (cd services/payment   && PORT=8090 go run ./cmd/server) & \
 	 (cd $(GATEWAY)          && PORT=8080 go run ./cmd/server); \
 	 wait
 
@@ -100,6 +101,7 @@ health:
 	@curl -sf http://localhost:8088/health       && echo " ai-assistant API OK"  || echo " ai-assistant API DOWN"
 	@curl -sf http://localhost:19010/health       && echo " ai-assistant core OK" || echo " ai-assistant core DOWN"
 	@curl -sf http://localhost:8089/health       && echo " editorial API OK"    || echo " editorial API DOWN"
+	@curl -sf http://localhost:8090/health       && echo " payment OK"          || echo " payment DOWN"
 	@curl -sf http://localhost:9100/health       && echo " editorial core OK"   || echo " editorial core DOWN"
 	@curl -sf http://localhost:8200/api/v1/heartbeat && echo " chromadb OK"      || echo " chromadb DOWN"
 

@@ -34,6 +34,7 @@ func main() {
 		{Name: "ingestion", BaseURL: envOr("INGESTION_URL", "http://localhost:8087"), Prefix: "/ingestion"},
 		{Name: "ai-assistant", BaseURL: envOr("AI_ASSISTANT_URL", "http://localhost:8088"), Prefix: "/ai"},
 		{Name: "editorial", BaseURL: envOr("EDITORIAL_URL", "http://localhost:8089"), Prefix: "/editorial"},
+		{Name: "payment", BaseURL: envOr("PAYMENT_URL", "http://localhost:8090"), Prefix: "/payment"},
 	}
 
 	r := chi.NewRouter()
