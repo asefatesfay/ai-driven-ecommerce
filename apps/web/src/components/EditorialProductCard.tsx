@@ -5,7 +5,14 @@ import Link from "next/link";
 import { useState } from "react";
 import type { EditorialProduct } from "@/lib/data";
 import { useCart } from "@/lib/CartContext";
-import { ATTRIBUTION_LABELS, FILTER_LABELS } from "@/lib/data";
+import { ATTRIBUTION_LABELS } from "@/lib/data";
+import ColorSwatches from "./ColorSwatches";
+
+const ATTRIBUTION_BADGE: Record<EditorialProduct["attribution"], string> = {
+  "fashion-office": "bg-[#F3E8FF] text-[#6B21A8]",
+  "buyer":          "bg-[#E8F0FE] text-[#1A56DB]",
+  "stylist":        "bg-[#D1FAE5] text-[#065F46]",
+};
 
 interface EditorialProductCardProps {
   product: EditorialProduct;
@@ -14,6 +21,8 @@ interface EditorialProductCardProps {
 export default function EditorialProductCard({ product }: EditorialProductCardProps) {
   const [wished, setWished] = useState(false);
   const [addedToBag, setAddedToBag] = useState(false);
+  const [selectedColor, setSelectedColor] = useState(0);
+  const [hovered, setHovered] = useState(false);
   const { addItem } = useCart();
 
   const displayPrice = product.salePrice ?? product.price;
@@ -21,134 +30,130 @@ export default function EditorialProductCard({ product }: EditorialProductCardPr
 
   function handleAddToBag(e: React.MouseEvent) {
     e.preventDefault();
-    if (product.numericProductId) addItem(product.numericProductId, 1, product.salePrice ?? product.price).catch(() => {});
+    if (product.numericProductId) {
+      addItem(product.numericProductId, 1, product.salePrice ?? product.price).catch(() => {});
+    }
     setAddedToBag(true);
     setTimeout(() => setAddedToBag(false), 2000);
   }
 
-  const allFilterTags = [
-    ...product.filters.recipient.map((r) => FILTER_LABELS.recipient[r]),
-    ...product.filters.theme.map((t) => FILTER_LABELS.theme[t]),
-    FILTER_LABELS.price[product.filters.price],
-  ].slice(0, 4);
-
   return (
-    <article className="group flex flex-col bg-white border border-nordstrom-gray-200 hover:border-nordstrom-gray-300 transition-all duration-200 hover:shadow-sm">
+    <article
+      className="group flex flex-col"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
       <Link href={`/product?style_id=${product.productId}`} className="contents">
-      {/* Image container */}
-      <div className="relative aspect-[3/4] overflow-hidden bg-nordstrom-gray-50">
-        <Image
-          src={product.imageUrl}
-          alt={product.name}
-          fill
-          className="object-cover group-hover:scale-[1.02] transition-transform duration-500"
-          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-        />
 
-        {/* Wishlist button */}
-        <button
-          aria-label={wished ? "Remove from wishlist" : "Add to wishlist"}
-          onClick={(e) => { e.preventDefault(); setWished(!wished); }}
-          className="absolute top-3 right-3 p-1.5 bg-white/90 backdrop-blur-sm hover:bg-white transition-colors"
-        >
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill={wished ? "#000" : "none"}
-            stroke="currentColor"
-            strokeWidth="1.5"
+        {/* ── Image — 4:5 ratio ────────────────────────────── */}
+        <div className="relative aspect-[4/5] overflow-hidden bg-[#F5F5F3] mb-3">
+          <Image
+            src={product.imageUrl}
+            alt={product.name}
+            fill
+            className="object-cover group-hover:scale-[1.03] transition-transform duration-500"
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          />
+
+          {/* Wishlist — circular white button, top-right */}
+          <button
+            aria-label={wished ? "Remove from wishlist" : "Add to wishlist"}
+            onClick={(e) => { e.preventDefault(); setWished(!wished); }}
+            className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center hover:shadow-md transition-shadow z-10"
           >
-            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-          </svg>
-        </button>
+            <svg
+              width="15"
+              height="15"
+              viewBox="0 0 24 24"
+              fill={wished ? "#1a1a1a" : "none"}
+              stroke="#1a1a1a"
+              strokeWidth="1.5"
+            >
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+            </svg>
+          </button>
 
-        {/* Attribution badge */}
-        <div className="absolute bottom-3 left-3">
-          <span className="bg-white/95 text-nordstrom-black text-[10px] tracking-widest uppercase px-2.5 py-1 font-medium">
-            {ATTRIBUTION_LABELS[product.attribution]}
-          </span>
+          {/* Sale badge overlay */}
+          {isOnSale && (
+            <div className="absolute top-2 left-2 bg-nordstrom-black text-white text-[10px] tracking-widest uppercase px-2 py-0.5 z-10">
+              Sale
+            </div>
+          )}
+
+          {/* Hover quick-add */}
+          {hovered && (
+            <div className="absolute bottom-0 inset-x-0 bg-white/97 px-3 py-2.5 border-t border-nordstrom-gray-200 z-20">
+              <button
+                onClick={handleAddToBag}
+                className="w-full bg-nordstrom-black text-white text-[10px] tracking-widest uppercase py-2 hover:bg-nordstrom-gray-700 transition-colors"
+              >
+                {addedToBag ? "Added ✓" : "Add to Bag"}
+              </button>
+            </div>
+          )}
         </div>
 
-        {/* Sale badge */}
-        {isOnSale && (
-          <div className="absolute top-3 left-3">
-            <span className="bg-nordstrom-black text-white text-[10px] tracking-widest uppercase px-2.5 py-1">
-              Sale
-            </span>
+        {/* ── Color swatches — between image and text ─────── */}
+        {product.colors && product.colors.length > 0 && (
+          <div className="mb-2 px-0.5">
+            <ColorSwatches
+              colors={product.colors}
+              selected={selectedColor}
+              onSelect={setSelectedColor}
+            />
           </div>
         )}
-      </div>
 
-      {/* Editorial content */}
-      <div className="flex flex-col flex-1 p-4 sm:p-5">
-        {/* Brand */}
-        <p className="text-[10px] tracking-[0.2em] uppercase text-nordstrom-gray-500 mb-1.5">
-          {product.brand}
-        </p>
+        {/* ── Text block ───────────────────────────────────── */}
+        <div className="flex flex-col gap-0.5 px-0.5">
 
-        {/* Editorial headline */}
-        <h2 className="text-base font-medium text-nordstrom-black leading-snug mb-2 line-clamp-2">
-          {product.editorialHeadline}
-        </h2>
+          {/* Editorial headline as small uppercase kicker */}
+          <p className="text-[10px] tracking-wide text-nordstrom-gray-500 uppercase line-clamp-1 mb-0.5">
+            {product.editorialHeadline}
+          </p>
 
-        {/* Product name */}
-        <p className="text-xs text-nordstrom-gray-500 mb-3 line-clamp-1">
-          {product.name}
-        </p>
+          {/* Brand bold + product name inline — Nordstrom pattern */}
+          <p className="text-sm text-nordstrom-black leading-snug line-clamp-2">
+            <span className="font-semibold">{product.brand}</span>
+            {" "}
+            <span className="font-normal">{product.name}</span>
+          </p>
 
-        {/* Divider */}
-        <div className="w-8 h-px bg-nordstrom-gray-200 mb-3" />
-
-        {/* Editorial copy */}
-        <p className="text-sm text-nordstrom-gray-700 leading-relaxed line-clamp-3 flex-1 mb-4">
-          {product.editorialCopy}
-        </p>
-
-        {/* Filter tags */}
-        <div className="flex flex-wrap gap-1.5 mb-4">
-          {allFilterTags.map((tag) => (
-            <span
-              key={tag}
-              className="text-[10px] tracking-wide uppercase text-nordstrom-gray-500 border border-nordstrom-gray-200 px-2 py-0.5"
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
-
-        {/* Price + CTA */}
-        <div className="flex items-center justify-between mt-auto">
-          <div className="flex items-baseline gap-2">
-            <span
-              className={`text-sm font-medium ${
-                isOnSale ? "text-red-600" : "text-nordstrom-black"
-              }`}
-            >
-              ${displayPrice.toFixed(2)}
-            </span>
-            {isOnSale && (
-              <span className="text-xs text-nordstrom-gray-500 line-through">
-                ${product.price.toFixed(2)}
-              </span>
+          {/* Price */}
+          <div className="mt-0.5">
+            {isOnSale ? (
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-sm font-medium text-red-600">${displayPrice.toFixed(2)}</span>
+                <span className="text-xs text-nordstrom-gray-400 line-through">${product.price.toFixed(2)}</span>
+              </div>
+            ) : (
+              <span className="text-sm font-medium text-nordstrom-black">${displayPrice.toFixed(2)}</span>
             )}
           </div>
 
-          <button
-            onClick={handleAddToBag}
-            className={`
-              text-xs tracking-widest uppercase font-medium px-4 py-2 transition-all duration-150
-              ${
-                addedToBag
-                  ? "bg-nordstrom-gray-700 text-white"
-                  : "bg-nordstrom-black text-white hover:bg-nordstrom-gray-700"
-              }
-            `}
-          >
-            {addedToBag ? "Added" : "Add to Bag"}
-          </button>
+          {/* Attribution pill — "Fashion Office Pick", "Buyer's Choice", "Stylist Favorite" */}
+          <span className={`self-start text-[10px] font-medium px-2 py-0.5 rounded-sm mt-0.5 ${ATTRIBUTION_BADGE[product.attribution]}`}>
+            {ATTRIBUTION_LABELS[product.attribution]}
+          </span>
+
+          {/* Single-star rating + count */}
+          {product.rating > 0 && (
+            <div className="flex items-center gap-1 mt-1">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="#C8A951" stroke="none">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+              </svg>
+              <span className="text-[12px] text-nordstrom-black leading-none">
+                {product.rating.toFixed(1)}
+              </span>
+              {product.reviewCount > 0 && (
+                <span className="text-[12px] text-nordstrom-gray-500 leading-none">
+                  ({product.reviewCount.toLocaleString()})
+                </span>
+              )}
+            </div>
+          )}
+
         </div>
-      </div>
       </Link>
     </article>
   );

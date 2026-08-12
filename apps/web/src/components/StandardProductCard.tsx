@@ -4,139 +4,130 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import type { CatalogProduct } from "@/lib/catalog-data";
-import { useCart } from "@/lib/CartContext";
-import StarRating from "./StarRating";
-import ProductBadge from "./ProductBadge";
 import ColorSwatches from "./ColorSwatches";
-import SizeSelector from "./SizeSelector";
+
+// Soft pill colors matching Nordstrom's badge style (coloured background, not solid black)
+const BADGE_COLORS: Record<string, string> = {
+  "sale":               "bg-[#FDE8E8] text-[#C81E1E]",
+  "new-markdown":       "bg-[#FDE8E8] text-[#C81E1E]",
+  "anniversary-sale":   "bg-[#FEF3C7] text-[#92400E]",
+  "best-seller":        "bg-[#E8F0FE] text-[#1A56DB]",
+  "top-rated":          "bg-[#E8F0FE] text-[#1A56DB]",
+  "beauty-exclusive":   "bg-[#F3E8FF] text-[#6B21A8]",
+  "gift-with-purchase": "bg-[#D1FAE5] text-[#065F46]",
+};
 
 export default function StandardProductCard({ product }: { product: CatalogProduct }) {
   const [wished, setWished] = useState(false);
   const [selectedColor, setSelectedColor] = useState(0);
-  const [selectedSize, setSelectedSize] = useState<string | null>(null);
-  const [hovered, setHovered] = useState(false);
-  const [addedToBag, setAddedToBag] = useState(false);
-  const { addItem } = useCart();
 
   const isOnSale = !!product.salePrice;
   const displayPrice = product.salePrice ?? product.price;
 
-  function handleAddToBag(e: React.MouseEvent) {
-    e.preventDefault();
-    if (product.sizes.length > 0 && !selectedSize) return;
-    if (product.productId) addItem(product.productId, 1, product.salePrice ?? product.price).catch(() => {});
-    setAddedToBag(true);
-    setTimeout(() => setAddedToBag(false), 2000);
-  }
+  const badgeStyle = product.badgeType
+    ? (BADGE_COLORS[product.badgeType] ?? "bg-gray-100 text-gray-700")
+    : "bg-gray-100 text-gray-700";
 
   return (
-    <article
-      className="group flex flex-col"
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-    >
-    <Link href={`/product?style_id=${product.id}`} className="contents">
-      {/* Image container */}
-      <div className="relative aspect-[3/4] overflow-hidden bg-nordstrom-gray-50 mb-3">
-        <Image
-          src={product.imageUrl}
-          alt={`${product.brand} ${product.name}`}
-          fill
-          className="object-cover group-hover:scale-[1.03] transition-transform duration-500"
-          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-        />
+    <article className="group flex flex-col">
+      <Link href={`/product?style_id=${product.id}`} className="contents">
 
-        {/* Wishlist — always visible (#4 fix) */}
-        <button
-          aria-label={wished ? "Remove from wishlist" : "Save to wishlist"}
-          onClick={(e) => { e.preventDefault(); setWished(!wished); }}
-          className="absolute top-2 right-2 p-1.5 bg-white/90 hover:bg-white transition-colors"
-        >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill={wished ? "#000" : "none"}
-            stroke="currentColor"
-            strokeWidth="1.5"
+        {/* ── Image — 4:5 ratio matching Nordstrom ────────── */}
+        <div className="relative aspect-[4/5] overflow-hidden bg-[#F5F5F3] mb-3">
+          <Image
+            src={product.imageUrl}
+            alt={`${product.brand} ${product.name}`}
+            fill
+            className="object-cover group-hover:scale-[1.03] transition-transform duration-500"
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+          />
+
+          {/* Wishlist — circular white button, top-right */}
+          <button
+            aria-label={wished ? "Remove from wishlist" : "Save to wishlist"}
+            onClick={(e) => { e.preventDefault(); setWished(!wished); }}
+            className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center hover:shadow-md transition-shadow z-10"
           >
-            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-          </svg>
-        </button>
+            <svg
+              width="15"
+              height="15"
+              viewBox="0 0 24 24"
+              fill={wished ? "#1a1a1a" : "none"}
+              stroke="#1a1a1a"
+              strokeWidth="1.5"
+            >
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+            </svg>
+          </button>
 
-        {/* Badge — above product name on the image */}
-        {product.badge && (
-          <div className="absolute top-2 left-2">
-            <ProductBadge badge={product.badge} badgeType={product.badgeType} />
-          </div>
-        )}
-
-        {/* Hover: size selector or quick-add (#3 fix) */}
-        {hovered && (
-          <div className="absolute bottom-0 inset-x-0 bg-white/97 px-3 py-2.5 border-t border-nordstrom-gray-200">
-            {product.sizes.length > 0 ? (
-              <>
-                <p className="text-[9px] tracking-widest uppercase text-nordstrom-gray-500 mb-1.5">
-                  {selectedSize ? `Size: ${selectedSize}` : "Select a size"}
-                </p>
-                <SizeSelector
-                  sizes={product.sizes}
-                  selected={selectedSize}
-                  onSelect={setSelectedSize}
-                />
-                {selectedSize && (
-                  <button
-                    onClick={handleAddToBag}
-                    className="mt-2 w-full bg-nordstrom-black text-white text-[10px] tracking-widest uppercase py-2 hover:bg-nordstrom-gray-700 transition-colors"
-                  >
-                    {addedToBag ? "Added ✓" : "Add to Bag"}
-                  </button>
-                )}
-              </>
-            ) : (
-              <button
-                onClick={handleAddToBag}
-                className="w-full bg-nordstrom-black text-white text-[10px] tracking-widest uppercase py-2 hover:bg-nordstrom-gray-700 transition-colors"
-              >
-                {addedToBag ? "Added ✓" : "Add to Bag"}
-              </button>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Card info */}
-      <div className="flex flex-col gap-1">
-        <p className="text-[10px] tracking-widest uppercase text-nordstrom-gray-500">{product.brand}</p>
-        <p className="text-xs text-nordstrom-black leading-snug line-clamp-2">{product.name}</p>
-
-        {/* Color swatches (#1 fix) */}
-        <ColorSwatches
-          colors={product.colors}
-          selected={selectedColor}
-          onSelect={setSelectedColor}
-        />
-
-        {/* Rating — gold stars (#8 fix) */}
-        <StarRating rating={product.rating} reviewCount={product.reviewCount} />
-
-        {/* Nordstrom-style stacked pricing (#2 fix) */}
-        <div className="flex flex-col gap-0.5 mt-0.5">
-          {isOnSale ? (
-            <>
-              <div className="flex items-baseline gap-1.5">
-                <span className="text-xs font-medium text-red-600">Sale: ${displayPrice.toFixed(2)}</span>
-              </div>
-              <span className="text-[10px] text-nordstrom-gray-500">
-                After Sale: ${product.price.toFixed(2)}
-              </span>
-            </>
-          ) : (
-            <span className="text-xs font-medium text-nordstrom-black">${displayPrice.toFixed(2)}</span>
+          {/* "New" text badge — image overlay, only for new items */}
+          {product.badgeType === "new-markdown" && (
+            <div className="absolute top-2 left-2 bg-nordstrom-black text-white text-[10px] tracking-widest uppercase px-2 py-0.5 z-10">
+              New
+            </div>
           )}
         </div>
-      </div>
-    </Link>
+
+        {/* ── Color swatches — between image and text, exactly like Nordstrom ── */}
+        {product.colors.length > 0 && (
+          <div className="mb-2 px-0.5">
+            <ColorSwatches
+              colors={product.colors}
+              selected={selectedColor}
+              onSelect={setSelectedColor}
+            />
+          </div>
+        )}
+
+        {/* ── Text block ───────────────────────────────────── */}
+        <div className="flex flex-col gap-0.5 px-0.5">
+
+          {/* "BRAND Name" on one line — brand bold, name normal — exactly Nordstrom style */}
+          <p className="text-sm text-nordstrom-black leading-snug line-clamp-2">
+            <span className="font-semibold">{product.brand}</span>
+            {" "}
+            <span className="font-normal">{product.name}</span>
+          </p>
+
+          {/* Price */}
+          <div className="mt-0.5">
+            {isOnSale ? (
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-sm font-medium text-red-600">${displayPrice.toFixed(2)}</span>
+                <span className="text-xs text-nordstrom-gray-400 line-through">${product.price.toFixed(2)}</span>
+              </div>
+            ) : (
+              <span className="text-sm font-medium text-nordstrom-black">${displayPrice.toFixed(2)}</span>
+            )}
+          </div>
+
+          {/* Soft-pill badge below price — "Gift with Purchase", "Best Seller", etc. */}
+          {product.badge && product.badgeType !== "new-markdown" && (
+            <span className={`self-start text-[10px] font-medium px-2 py-0.5 rounded-sm mt-0.5 ${badgeStyle}`}>
+              {product.badge}
+            </span>
+          )}
+
+          {/* Rating — single filled star + number + (count) */}
+          {product.rating > 0 && (
+            <div className="flex items-center gap-1 mt-1">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="#C8A951" stroke="none">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+              </svg>
+              <span className="text-[12px] text-nordstrom-black leading-none">
+                {product.rating.toFixed(1)}
+              </span>
+              {product.reviewCount > 0 && (
+                <span className="text-[12px] text-nordstrom-gray-500 leading-none">
+                  ({product.reviewCount.toLocaleString()})
+                </span>
+              )}
+            </div>
+          )}
+
+
+        </div>
+      </Link>
     </article>
   );
 }

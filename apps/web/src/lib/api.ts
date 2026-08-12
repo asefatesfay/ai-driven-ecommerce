@@ -102,7 +102,7 @@ export async function fetchEditorial(params: {
   Object.entries(params).forEach(([k, v]) => {
     if (v) q.set(k, v);
   });
-  const res = await fetch(`${CATALOG_BASE}/api/v1/editorial?${q}`, { next: { revalidate: 30 } });
+  const res = await fetch(`${CATALOG_BASE}/api/v1/editorial?${q}`, { cache: "no-store" });
   if (!res.ok) throw new Error(`fetchEditorial: ${res.status}`);
   return res.json();
 }
@@ -164,10 +164,13 @@ export function apiEditorialToUI(ep: APIEditorialProduct): EditorialProduct {
     name: p.name,
     price: p.price,
     salePrice: p.sale_price,
+    rating: p.rating,
+    reviewCount: p.review_count,
     imageUrl: p.image_url,
     editorialHeadline: ep.editorial_headline,
     editorialCopy: ep.editorial_copy,
     attribution: ep.attribution as EditorialProduct["attribution"],
+    colors: p.colors ?? [],
     filters: {
       recipient: ep.filter_recipient as EditorialProduct["filters"]["recipient"],
       theme: ep.filter_theme as EditorialProduct["filters"]["theme"],

@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { fetchEditorial, apiEditorialToUI } from "@/lib/api";
 import type { FilterRecipient, FilterTheme, FilterPrice, EditorialProduct } from "@/lib/data";
+import { GIFT_PRODUCTS } from "@/lib/data";
 import type { ActiveFilters } from "./FilterBar";
 import FilterBar from "./FilterBar";
 import EditorialProductCard from "./EditorialProductCard";
@@ -19,11 +20,16 @@ export default function GiftEditGrid() {
     price: null,
   });
 
-  // Fetch all editorial products once on mount; filter client-side
+  // Fetch editorial products from API; fall back to static GIFT_PRODUCTS if the
+  // service is unavailable or returns an empty list (keeps the UI working in dev
+  // when the catalog service is not running).
   useEffect(() => {
     fetchEditorial({})
-      .then((data) => setProducts((data.editorial_products ?? []).map(apiEditorialToUI)))
-      .catch(console.error)
+      .then((data) => {
+        const api = (data.editorial_products ?? []).map(apiEditorialToUI);
+        setProducts(api.length > 0 ? api : GIFT_PRODUCTS);
+      })
+      .catch(() => setProducts(GIFT_PRODUCTS))
       .finally(() => setLoading(false));
   }, []);
 
